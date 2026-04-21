@@ -12,7 +12,7 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-async function callAI(content: any) {
+async function callAIOnce(content: any) {
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -34,7 +34,22 @@ async function callAI(content: any) {
   const data = await resp.json();
   const url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
   if (!url) throw new Error("No image returned");
-  return url; // data:image/png;base64,...
+  return url;
+}
+
+async function callAI(content: any, attempts = 3): Promise<string> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await callAIOnce(content);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "RATE_LIMIT" || msg === "PAYMENT_REQUIRED") throw e;
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("AI failed");
 }
 
 function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; mime: string } {
