@@ -14,7 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      artists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          reference_image_id: string | null
+          songs: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          reference_image_id?: string | null
+          songs?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          reference_image_id?: string | null
+          songs?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      generated_images: {
+        Row: {
+          artist_id: string
+          created_at: string
+          id: string
+          is_reference: boolean
+          kind: string
+          prompt: string | null
+          song: string | null
+          storage_path: string
+        }
+        Insert: {
+          artist_id: string
+          created_at?: string
+          id?: string
+          is_reference?: boolean
+          kind: string
+          prompt?: string | null
+          song?: string | null
+          storage_path: string
+        }
+        Update: {
+          artist_id?: string
+          created_at?: string
+          id?: string
+          is_reference?: boolean
+          kind?: string
+          prompt?: string | null
+          song?: string | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_images_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
