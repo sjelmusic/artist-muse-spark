@@ -84,6 +84,48 @@ async function fetchAsDataUrl(publicUrl: string): Promise<string> {
   return `data:${mime};base64,${btoa(binary)}`;
 }
 
+// Build the pool of reference images for an artist: the chosen reference + any liked images.
+// De-duplicates and returns their data URLs, ready to be randomly sampled per generation.
+async function buildReferencePool(
+  artistId: string,
+  chosenReferenceId: string | null
+): Promise<string[]> {
+  const ids = new Set<string>();
+  const rows: { storage_path: string }[] = [];
+
+  if (chosenReferenceId) {
+    const { data } = await supabase
+      .from("generated_images")
+      .select("id, storage_path")
+      .eq("id", chosenReferenceId)
+      .maybeSingle();
+    if (data) {
+      ids.add(data.id);
+      rows.push({ storage_path: data.storage_path });
+    }
+  }
+
+  const { data: liked } = await supabase
+    .from("generated_images")
+    .select("id, storage_path")
+    .eq("artist_id", artistId)
+    .eq("liked", true);
+  for (const row of liked || []) {
+    if (!ids.has(row.id)) {
+      ids.add(row.id);
+      rows.push({ storage_path: row.storage_path });
+    }
+  }
+
+  const urls = await Promise.all(
+    rows.map(async (r) => {
+      const { data: pub } = supabase.storage.from("artist-images").getPublicUrl(r.storage_path);
+      return await fetchAsDataUrl(pub.publicUrl);
+    })
+  );
+  return urls;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
