@@ -19,7 +19,7 @@ export async function resizeToSquare(blob: Blob, size: number): Promise<Blob> {
   const h = bitmap.height * scale;
   ctx.drawImage(bitmap, (size - w) / 2, (size - h) / 2, w, h);
   return await new Promise<Blob>((resolve) =>
-    canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.92)
+    canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.78)
   );
 }
 
