@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
           const songLine = song
             ? ` Setting and mood inspired by the vibe of the song "${song}".`
             : "";
-          const prompt = `you are creating a real flash image in minimal environment for this person in reference pic. Very real, very cool. different setting, different pose & outfit but exactly the same person.${songLine}`;
+          const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
           const dataUrl = await callAI([
             { type: "text", text: prompt },
             { type: "image_url", image_url: { url: refDataUrl } },
