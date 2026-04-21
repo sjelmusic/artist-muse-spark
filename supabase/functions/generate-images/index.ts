@@ -257,6 +257,38 @@ Deno.serve(async (req) => {
       ];
       const aestheticIntensities = ["minimalist and refined", "lonely and beautiful", "editorial fine-art", "gallery-worthy quiet", "fashion campaign minimalism", "negative-space heavy"];
 
+      // ---- PLAIN ---- (no person at all, just vibe / objects / scenes that represent them)
+      const plainLocations = [
+        "an empty unmade bed with morning light through sheer curtains",
+        "a cluttered nightstand: half-burned candle, rings, a glass of water",
+        "a single neon sign humming on a wet street, no people",
+        "a rotary phone off the hook on a kitchen counter",
+        "a cassette tape and headphones on worn carpet",
+        "an open window, curtain blowing, distant city lights",
+        "a pile of vintage clothes on a chair",
+        "a half-eaten breakfast on a diner table, booth empty",
+        "a record spinning on a turntable, dust in the light",
+        "a bathtub full of water and rose petals, no person",
+        "a long empty hallway with a flickering fluorescent light",
+        "rain on a windshield at night, dashboard glow",
+        "a polaroid camera and scattered photos on hardwood",
+        "a pair of cowboy boots by a screen door",
+        "an empty motel pool at night, underwater lights on",
+        "a cigarette burning in an ashtray next to an open notebook",
+        "a wilting bouquet on a windowsill",
+        "tangled bedsheets and a guitar leaning against the wall",
+      ];
+      const plainMoods = [
+        "still life, no figure",
+        "object-focused, intimate detail",
+        "atmospheric environment shot, empty",
+        "a scene that just left, evidence of a person",
+        "quiet, observational",
+        "warm domestic intimacy",
+        "lonely interior",
+      ];
+      const plainIntensities = ["editorial still life", "moody and personal", "diaristic and intimate", "gallery quiet", "vibe-piece, no subject", "atmospheric vignette"];
+
       const flavorConfig = {
         wild: {
           locations: wildLocations,
@@ -278,6 +310,13 @@ Deno.serve(async (req) => {
           intensities: aestheticIntensities,
           directive:
             "make it AESTHETIC and minimal: the person is either VERY FAR away (tiny in the frame, lots of negative space), or in EXTREME CLOSE-UP (a hand, an eye, a detail), or NOT VISIBLE AT ALL (a still-life of an object/scene that represents them). gallery-worthy, fine-art editorial.",
+        },
+        plain: {
+          locations: plainLocations,
+          moods: plainMoods,
+          intensities: plainIntensities,
+          directive:
+            "make it PLAIN: NO PERSON IN THE FRAME AT ALL. This is a pure vibe / still-life / environment shot that represents the artist's personality and the mood of their music. Objects, rooms, scenes, atmospheres only. Use the reference image only to understand their aesthetic world (color palette, taste, energy) — do NOT depict the person. Real, flash-lit, editorial.",
         },
       } as const;
       const cfg = flavorConfig[flavor];
