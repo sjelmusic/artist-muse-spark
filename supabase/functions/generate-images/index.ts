@@ -12,7 +12,7 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-async function callAI(content: any) {
+async function callAIOnce(content: any) {
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -34,7 +34,22 @@ async function callAI(content: any) {
   const data = await resp.json();
   const url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
   if (!url) throw new Error("No image returned");
-  return url; // data:image/png;base64,...
+  return url;
+}
+
+async function callAI(content: any, attempts = 3): Promise<string> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await callAIOnce(content);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "RATE_LIMIT" || msg === "PAYMENT_REQUIRED") throw e;
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("AI failed");
 }
 
 function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; mime: string } {
@@ -101,29 +116,27 @@ Deno.serve(async (req) => {
     if (mode === "headshots") {
       const basePrompt = (i: number) =>
         `you are creating a real flash image for a cool gen-z person called ${artist.name}. always shot with direct flash lighting. very real, very cool, minimal artsy aesthetic, not cluttered. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.`;
-      // Generate 4 headshots in parallel — each inserts as soon as it finishes
-      const tasks = Array.from({ length: 4 }, (_, i) =>
-        (async () => {
-          const prompt = basePrompt(i);
-          const dataUrl = await callAI(prompt);
-          const path = await uploadImage(artistId, dataUrl, `headshot-${i + 1}`);
-          const { data: img, error: iErr } = await supabase
-            .from("generated_images")
-            .insert({ artist_id: artistId, storage_path: path, kind: "headshot", prompt })
-            .select()
-            .single();
-          if (iErr) throw iErr;
-          return img;
-        })()
-      );
-      const results = await Promise.allSettled(tasks);
-      const created = results
-        .filter((r) => r.status === "fulfilled")
-        .map((r) => (r as PromiseFulfilledResult<any>).value);
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed) console.error(`Headshots: ${failed} failed`);
-      await supabase.from("artists").update({ status: "headshots_ready" }).eq("id", artistId);
-      return new Response(JSON.stringify({ images: created, failed }), {
+      const job = (async () => {
+        const tasks = Array.from({ length: 4 }, (_, i) =>
+          (async () => {
+            const prompt = basePrompt(i);
+            const dataUrl = await callAI(prompt);
+            const path = await uploadImage(artistId, dataUrl, `headshot-${i + 1}`);
+            const { error: iErr } = await supabase
+              .from("generated_images")
+              .insert({ artist_id: artistId, storage_path: path, kind: "headshot", prompt });
+            if (iErr) throw iErr;
+          })()
+        );
+        const results = await Promise.allSettled(tasks);
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed) console.error(`Headshots: ${failed} failed`);
+        await supabase.from("artists").update({ status: "headshots_ready" }).eq("id", artistId);
+      })();
+      // @ts-ignore EdgeRuntime is provided by Deno deploy
+      EdgeRuntime.waitUntil(job);
+      return new Response(JSON.stringify({ accepted: true }), {
+        status: 202,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -155,42 +168,40 @@ Deno.serve(async (req) => {
       const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
 
       const songs: string[] = artist.songs || [];
-      // 6 variants in parallel
-      const variantTasks = Array.from({ length: 6 }, (_, i) =>
-        (async () => {
-          const song = songs.length ? songs[i % songs.length] : null;
-          const songLine = song
-            ? ` Setting and mood inspired by the vibe of the song "${song}".`
-            : "";
-          const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
-          const dataUrl = await callAI([
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: refDataUrl } },
-          ]);
-          const path = await uploadImage(artistId, dataUrl, `variant-${i + 1}`);
-          const { data: img, error: iErr } = await supabase
-            .from("generated_images")
-            .insert({
-              artist_id: artistId,
-              storage_path: path,
-              kind: "variant",
-              song,
-              prompt,
-            })
-            .select()
-            .single();
-          if (iErr) throw iErr;
-          return img;
-        })()
-      );
-      const vResults = await Promise.allSettled(variantTasks);
-      const created = vResults
-        .filter((r) => r.status === "fulfilled")
-        .map((r) => (r as PromiseFulfilledResult<any>).value);
-      const failed = vResults.filter((r) => r.status === "rejected").length;
-      if (failed) console.error(`Variants: ${failed} failed`);
-      await supabase.from("artists").update({ status: "variants_ready" }).eq("id", artistId);
-      return new Response(JSON.stringify({ images: created, failed }), {
+      const job = (async () => {
+        const variantTasks = Array.from({ length: 6 }, (_, i) =>
+          (async () => {
+            const song = songs.length ? songs[i % songs.length] : null;
+            const songLine = song
+              ? ` Setting and mood inspired by the vibe of the song "${song}".`
+              : "";
+            const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
+            const dataUrl = await callAI([
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: refDataUrl } },
+            ]);
+            const path = await uploadImage(artistId, dataUrl, `variant-${i + 1}`);
+            const { error: iErr } = await supabase
+              .from("generated_images")
+              .insert({
+                artist_id: artistId,
+                storage_path: path,
+                kind: "variant",
+                song,
+                prompt,
+              });
+            if (iErr) throw iErr;
+          })()
+        );
+        const vResults = await Promise.allSettled(variantTasks);
+        const failed = vResults.filter((r) => r.status === "rejected").length;
+        if (failed) console.error(`Variants: ${failed} failed`);
+        await supabase.from("artists").update({ status: "variants_ready" }).eq("id", artistId);
+      })();
+      // @ts-ignore EdgeRuntime is provided by Deno deploy
+      EdgeRuntime.waitUntil(job);
+      return new Response(JSON.stringify({ accepted: true }), {
+        status: 202,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
