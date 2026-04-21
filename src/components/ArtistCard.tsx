@@ -261,7 +261,7 @@ export function ArtistCard({ artist, onChange }: Props) {
           <section>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs uppercase tracking-[0.2em] font-bold">
-                02 — the set ({variants.length}/6)
+                02 — the set ({variants.length})
               </h4>
               <div className="flex items-center gap-3">
                 {isLoading && (
