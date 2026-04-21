@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchImageBlob, publicUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Heart, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, Download, Heart, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -75,6 +75,30 @@ interface Props {
 export function ArtistCard({ artist, onChange }: Props) {
   const [images, setImages] = useState<Image[]>([]);
   const [busy, setBusy] = useState(false);
+  const [editingKeywords, setEditingKeywords] = useState(false);
+  const [keywordDraft, setKeywordDraft] = useState(artist.songs.join(", "));
+
+  useEffect(() => {
+    if (!editingKeywords) setKeywordDraft(artist.songs.join(", "));
+  }, [artist.songs, editingKeywords]);
+
+  const saveKeywords = async () => {
+    const next = keywordDraft
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const { error } = await supabase
+      .from("artists")
+      .update({ songs: next })
+      .eq("id", artist.id);
+    if (error) {
+      toast.error("couldn't save keywords");
+      return;
+    }
+    setEditingKeywords(false);
+    toast.success("keywords updated");
+    onChange();
+  };
 
   const load = async () => {
     const { data } = await supabase
@@ -218,12 +242,47 @@ export function ArtistCard({ artist, onChange }: Props) {
   return (
     <div className="bg-card border-2 border-foreground shadow-brutal-lg overflow-hidden">
       <header className="flex items-start justify-between p-5 border-b-2 border-foreground bg-background">
-        <div>
+        <div className="flex-1 min-w-0 mr-4">
           <h3 className="font-serif-display text-4xl leading-none">{artist.name}</h3>
-          {artist.songs.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-2 uppercase tracking-wider">
-              {artist.songs.join(" · ")}
-            </p>
+          {editingKeywords ? (
+            <div className="mt-2 flex gap-2 items-center">
+              <input
+                value={keywordDraft}
+                onChange={(e) => setKeywordDraft(e.target.value)}
+                placeholder="keyword, keyword, keyword"
+                className="flex-1 border-2 border-foreground bg-background px-2 py-1 text-xs uppercase tracking-wider focus:outline-none"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveKeywords();
+                  if (e.key === "Escape") setEditingKeywords(false);
+                }}
+              />
+              <button
+                onClick={saveKeywords}
+                className="border-2 border-foreground bg-accent text-accent-foreground p-1 hover:bg-foreground hover:text-background"
+                title="save"
+              >
+                <Check className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => setEditingKeywords(false)}
+                className="border-2 border-foreground bg-background p-1 hover:bg-destructive hover:text-destructive-foreground"
+                title="cancel"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingKeywords(true)}
+              className="mt-2 group flex items-center gap-2 text-left"
+              title="edit keywords"
+            >
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                {artist.songs.length > 0 ? artist.songs.join(" · ") : "+ add keywords"}
+              </p>
+              <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+            </button>
           )}
         </div>
         <div className="flex gap-2">
