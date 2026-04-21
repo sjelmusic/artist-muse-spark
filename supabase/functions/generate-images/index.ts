@@ -327,7 +327,11 @@ Deno.serve(async (req) => {
           (async () => {
             const song = songs.length ? songs[i % songs.length] : null;
             const songLine = song ? ` Loose vibe inspired by the song "${song}".` : "";
-            const prompt = `you are creating a real flash image inspired by this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. when the person is visible, keep the face identical to the reference. ${cfg.directive} setting: ${pick(cfg.locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine}`;
+            const intro =
+              flavor === "plain"
+                ? `you are creating a real flash image that captures the VIBE and PERSONALITY of the artist ${artist.name}. NO PERSON IN THE FRAME. use the reference image only to read their aesthetic world.`
+                : `you are creating a real flash image inspired by this person in reference pic. when the person is visible, keep the face identical to the reference.`;
+            const prompt = `${intro} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} setting: ${pick(cfg.locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: refDataUrl } },
