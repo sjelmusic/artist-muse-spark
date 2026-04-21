@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Loader2, Trash2, Wand2, X } from "lucide-react";
+import { Check, Download, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -85,6 +85,21 @@ export function ArtistCard({ artist, onChange }: Props) {
       if (error) throw error;
       toast.success(`Generating variants for ${artist.name}…`);
       onChange();
+    } catch (e: any) {
+      toast.error(e.message || "Failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const generateExtra = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.functions.invoke("generate-images", {
+        body: { mode: "extra", artistId: artist.id },
+      });
+      if (error) throw error;
+      toast.success(`Generating 10 more wild ones for ${artist.name}…`);
     } catch (e: any) {
       toast.error(e.message || "Failed");
     } finally {
@@ -248,11 +263,22 @@ export function ArtistCard({ artist, onChange }: Props) {
               <h4 className="text-xs uppercase tracking-[0.2em] font-bold">
                 02 — the set ({variants.length}/6)
               </h4>
-              {isLoading && (
-                <span className="text-xs flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" /> generating
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {isLoading && (
+                  <span className="text-xs flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin" /> generating
+                  </span>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={generateExtra}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 10 wild
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {variants.length === 0 && isLoading
