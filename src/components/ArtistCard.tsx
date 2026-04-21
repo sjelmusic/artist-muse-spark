@@ -273,10 +273,28 @@ export function ArtistCard({ artist, onChange }: Props) {
                   size="sm"
                   variant="outline"
                   disabled={busy}
-                  onClick={generateExtra}
+                  onClick={() => generateExtra("wild")}
                   className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> 10 wild
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => generateExtra("cinematic")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 10 cinematic
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => generateExtra("aesthetic")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 10 aesthetic
                 </Button>
               </div>
             </div>
