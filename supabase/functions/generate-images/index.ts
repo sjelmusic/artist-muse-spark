@@ -204,10 +204,8 @@ Deno.serve(async (req) => {
         .update({ reference_image_id: referenceImageId, status: "reference_chosen" })
         .eq("id", artistId);
 
-      const { data: pub } = supabase.storage
-        .from("artist-images")
-        .getPublicUrl(refImg.storage_path);
-      const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
+      const refPool = await buildReferencePool(artistId, referenceImageId);
+      const pickRef = () => refPool[Math.floor(Math.random() * refPool.length)];
 
       const songs: string[] = artist.songs || [];
       const job = (async () => {
@@ -220,7 +218,7 @@ Deno.serve(async (req) => {
             const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: refDataUrl } },
+              { type: "image_url", image_url: { url: pickRef() } },
             ]);
             const path = await uploadImage(artistId, dataUrl, `variant-${i + 1}`);
             const { error: iErr } = await supabase
