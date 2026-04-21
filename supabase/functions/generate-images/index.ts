@@ -207,8 +207,11 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "extra") {
-      const flavor: "wild" | "cinematic" | "aesthetic" =
-        body.flavor === "wild" || body.flavor === "cinematic" || body.flavor === "aesthetic"
+      const flavor: "wild" | "cinematic" | "aesthetic" | "plain" =
+        body.flavor === "wild" ||
+        body.flavor === "cinematic" ||
+        body.flavor === "aesthetic" ||
+        body.flavor === "plain"
           ? body.flavor
           : "cinematic";
 
