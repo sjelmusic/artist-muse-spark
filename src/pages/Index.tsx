@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BulkInputForm } from "@/components/BulkInputForm";
 import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Check, Download, Heart, HelpCircle, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { fetchImageBlob } from "@/lib/storage";
 import JSZip from "jszip";
@@ -21,6 +21,7 @@ type Artist = {
 const Index = () => {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [zipping, setZipping] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const load = async () => {
     const { data } = await supabase
@@ -132,11 +133,42 @@ const Index = () => {
               aesthetic engine<span className="text-accent">.</span>
             </h1>
           </div>
-          <div className="hidden md:block text-right text-xs uppercase tracking-widest text-muted-foreground">
-            artist · songs<br />
-            → headshots → set
-          </div>
+          <button
+            onClick={() => setShowHelp((s) => !s)}
+            className="flex items-center gap-1.5 border-2 border-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            {showHelp ? "hide" : "how it works"}
+          </button>
         </div>
+        {showHelp && (
+          <div className="border-t-2 border-foreground bg-secondary">
+            <div className="max-w-6xl mx-auto px-6 py-5 grid md:grid-cols-2 gap-x-10 gap-y-4 text-xs">
+              <div>
+                <h3 className="font-serif-display text-xl mb-2">the flow</h3>
+                <ol className="space-y-1.5 text-muted-foreground leading-relaxed list-decimal list-inside">
+                  <li>paste a lineup (or upload your own face) → 4 headshots get generated.</li>
+                  <li>pick one as your reference → 6 styled variants are auto-generated.</li>
+                  <li>add 10 more in any flavor: <b>wild</b>, <b>cinematic</b>, <b>aesthetic</b>, or <b>plain</b> (no person, just vibe).</li>
+                  <li>like your favorites → they join the reference pool for future generations.</li>
+                  <li>zip the lot at 3000×3000 when you're happy.</li>
+                </ol>
+              </div>
+              <div>
+                <h3 className="font-serif-display text-xl mb-2">icons</h3>
+                <ul className="space-y-1.5 text-muted-foreground leading-relaxed">
+                  <li className="flex items-center gap-2"><Wand2 className="w-3.5 h-3.5 shrink-0" /> <b>use this</b> — picks a headshot as the reference for variants.</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 shrink-0" /> the currently chosen reference.</li>
+                  <li className="flex items-center gap-2"><Heart className="w-3.5 h-3.5 shrink-0" /> <b>like</b> — adds the image to the reference pool, randomly sampled in future prompts.</li>
+                  <li className="flex items-center gap-2"><Download className="w-3.5 h-3.5 shrink-0" /> <b>download</b> — single image (per tile) or zip (per artist / whole lineup), all at 3000×3000.</li>
+                  <li className="flex items-center gap-2"><Plus className="w-3.5 h-3.5 shrink-0" /> <b>+ 10 …</b> — generates 10 more variants in that flavor.</li>
+                  <li className="flex items-center gap-2"><Pencil className="w-3.5 h-3.5 shrink-0" /> <b>keywords</b> — click them under the artist name to edit. randomly woven into prompts (sometimes 0, sometimes 1–3) to anchor the vibe.</li>
+                  <li className="flex items-center gap-2"><X className="w-3.5 h-3.5 shrink-0" /> delete a single image · <Trash2 className="w-3.5 h-3.5 shrink-0 ml-1" /> delete the whole artist.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
