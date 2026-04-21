@@ -374,9 +374,20 @@ Deno.serve(async (req) => {
       const job = (async () => {
         const tasks = Array.from({ length: 10 }, (_, i) =>
           (async () => {
-            const sampled = sampleKeywords(keywords);
+            // Cinematic + aesthetic lean even harder on the keywords: always sample
+            // at least 1, often 2–3, and phrase them as the PRIMARY creative driver.
+            const heavyKeywordFlavor = flavor === "cinematic" || flavor === "aesthetic";
+            let sampled = sampleKeywords(keywords);
+            if (heavyKeywordFlavor && keywords.length && !sampled) {
+              // force at least one keyword for these flavors
+              const shuffled = [...keywords].sort(() => Math.random() - 0.5);
+              const count = Math.min(keywords.length, 1 + Math.floor(Math.random() * 3)); // 1–3
+              sampled = shuffled.slice(0, count).map((k) => `"${k}"`).join(", ");
+            }
             const songLine = sampled
-              ? ` IMPORTANT — strongly anchor the mood, setting, styling and color palette around these aesthetic keywords: ${sampled}. Let them clearly drive the vibe.`
+              ? heavyKeywordFlavor
+                ? ` CRITICAL CREATIVE DIRECTION — these keywords are the PRIMARY driver of this image: ${sampled}. The setting, wardrobe, props, color palette, light quality and emotional tone must be built directly around them. Treat them as the brief; everything else is secondary.`
+                : ` IMPORTANT — strongly anchor the mood, setting, styling and color palette around these aesthetic keywords: ${sampled}. Let them clearly drive the vibe.`
               : "";
             const intro =
               flavor === "plain"
