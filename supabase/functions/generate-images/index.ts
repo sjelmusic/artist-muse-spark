@@ -207,6 +207,11 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "extra") {
+      const flavor: "wild" | "cinematic" | "aesthetic" =
+        body.flavor === "wild" || body.flavor === "cinematic" || body.flavor === "aesthetic"
+          ? body.flavor
+          : "cinematic";
+
       const refId = artist.reference_image_id;
       if (!refId) throw new Error("No reference image chosen yet");
 
@@ -222,14 +227,57 @@ Deno.serve(async (req) => {
         .getPublicUrl(refImg.storage_path);
       const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
 
-      // Album-cover aesthetic pools — elevated, editorial, still flash-real
-      const creativeLocations = [
-        "empty motel room with one lamp on", "long hotel corridor with patterned carpet", "rain-soaked city street at night", "minimal white gallery wall", "vintage car interior", "diner counter at 2am", "stairwell with dramatic shadows", "field of wildflowers at dusk", "marble bathroom with soft light", "polished concrete loft", "sun-bleached parking lot", "near a swimming pool at golden hour", "warm wood-paneled room", "draped velvet backdrop", "balcony overlooking city lights", "single chair in an empty studio", "garden with overgrown greenery", "passenger seat of a car at night", "glass-walled phone booth", "wide open desert road",
+      // ---- WILD ----
+      const wildLocations = [
+        "neon-lit laundromat at 3am", "carwash with foam everywhere", "abandoned amusement park", "claw machine arcade", "behind a fast-food drive-thru", "in a kiddie pool full of jello", "inflatable bouncy castle", "convenience store fridge aisle", "petting zoo with a goat", "horse stable", "field with cows in the background", "parking lot full of seagulls", "a giant pile of stuffed animals", "covered in glitter in a bathtub", "wrapped in caution tape", "surrounded by balloons", "rooftop with pigeons taking off", "in a phone booth full of receipts", "dog park with golden retrievers running by",
       ];
-      const creativeMoods = [
-        "centered editorial portrait", "cinematic medium shot", "shot on 35mm film feel", "shallow depth of field", "subject looking off-camera", "candid in-between moment", "soft contemplative gaze", "back to camera, head turned", "leaning against a wall", "seated, relaxed posture", "lit cigarette or drink in hand as quiet prop", "wind in hair, calm expression", "holding a flower or single object", "wrapped in a simple coat or jacket",
+      const wildMoods = [
+        "y2k chaos", "deranged but cute", "screaming-laughing energy", "weird candid moment", "with a parrot on shoulder", "holding a tiny dog", "playing with a cat", "covered in confetti", "blowing bubblegum", "sticking tongue out", "weirdly proud pose", "off-balance falling motion", "frozen mid-jump", "looking shocked at the camera",
       ];
-      const intensities = ["dreamy and soft", "moody and intimate", "quiet confidence", "romantic melancholy", "cool and detached", "warm nostalgic", "minimal and refined", "cinematic stillness", "indie album cover", "fashion editorial"];
+      const wildIntensities = ["maximalist chaos", "feral but fashion", "ironic and over-the-top", "playful absurd", "campy and loud", "tabloid paparazzi feel", "viral meme energy"];
+
+      // ---- CINEMATIC ----
+      const cinematicLocations = [
+        "empty motel room with one lamp on", "long hotel corridor with patterned carpet", "rain-soaked city street at night", "vintage car interior at night", "diner booth at 2am", "stairwell with dramatic shadows", "passenger seat of a car, headlights passing", "neon-lit underpass", "smoky bar with red lighting", "elevator with flickering light", "wet asphalt with reflected signs", "phone booth at night", "balcony overlooking city lights", "warm wood-paneled room with a single window",
+      ];
+      const cinematicMoods = [
+        "shallow depth of field, cinematic medium shot", "shot on 35mm film feel", "subject looking off-camera, contemplative", "candid in-between moment", "back to camera, head turned slightly", "leaning against a wall, smoking", "seated, relaxed posture", "wind in hair, calm expression", "lit cigarette as quiet prop", "rain on skin",
+      ];
+      const cinematicIntensities = ["moody and intimate", "romantic melancholy", "quiet confidence", "noir-tinted", "cinematic stillness", "warm nostalgic", "slow-burn drama"];
+
+      // ---- AESTHETIC ---- (person very far, very close, or even absent)
+      const aestheticLocations = [
+        "tiny silhouette at end of long empty hallway", "lone figure walking across vast empty parking lot", "small figure in middle of huge empty field", "person dwarfed by a giant concrete wall", "extreme close-up of just the eye", "extreme close-up of hands holding a flower", "macro of skin texture and a single earring", "back of the head only, hair detail", "just shoes on a tiled floor", "STILL LIFE: an empty chair, a coat draped over it (no person)", "STILL LIFE: a half-drunk glass of wine on a windowsill (no person)", "STILL LIFE: rumpled bed with morning light, no person", "STILL LIFE: open window with curtain blowing, no person", "wide aerial-feel shot, person tiny in the corner", "person reflected small in a huge mirror across the room", "shot through a doorway, person far away in the next room",
+      ];
+      const aestheticMoods = [
+        "extreme wide shot, brutal negative space", "extreme macro close-up", "object-focused still life, no figure", "minimal composition, rule of thirds", "architectural symmetry, person as accent", "tight crop on a single detail", "shot from very far away with a long lens feel",
+      ];
+      const aestheticIntensities = ["minimalist and refined", "lonely and beautiful", "editorial fine-art", "gallery-worthy quiet", "fashion campaign minimalism", "negative-space heavy"];
+
+      const flavorConfig = {
+        wild: {
+          locations: wildLocations,
+          moods: wildMoods,
+          intensities: wildIntensities,
+          directive:
+            "make it WILD and PLAYFUL: chaotic, fun, slightly absurd. animals, props, weird settings welcome. still cool, still flash-photo real. different outfit, different pose.",
+        },
+        cinematic: {
+          locations: cinematicLocations,
+          moods: cinematicMoods,
+          intensities: cinematicIntensities,
+          directive:
+            "make it CINEMATIC: feels like a still from an indie movie. moody, intentional, beautifully composed. different outfit, different pose.",
+        },
+        aesthetic: {
+          locations: aestheticLocations,
+          moods: aestheticMoods,
+          intensities: aestheticIntensities,
+          directive:
+            "make it AESTHETIC and minimal: the person is either VERY FAR away (tiny in the frame, lots of negative space), or in EXTREME CLOSE-UP (a hand, an eye, a detail), or NOT VISIBLE AT ALL (a still-life of an object/scene that represents them). gallery-worthy, fine-art editorial.",
+        },
+      } as const;
+      const cfg = flavorConfig[flavor];
 
       const songs: string[] = artist.songs || [];
       const job = (async () => {
@@ -237,12 +285,12 @@ Deno.serve(async (req) => {
           (async () => {
             const song = songs.length ? songs[i % songs.length] : null;
             const songLine = song ? ` Loose vibe inspired by the song "${song}".` : "";
-            const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. exactly the same person — keep the face identical — but make it feel like ALBUM COVER ART: aesthetic, intentional, beautifully composed, editorial. different outfit, different pose. setting: ${pick(creativeLocations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(creativeMoods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(intensities, i)}.${songLine}`;
+            const prompt = `you are creating a real flash image inspired by this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. when the person is visible, keep the face identical to the reference. ${cfg.directive} setting: ${pick(cfg.locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: refDataUrl } },
             ]);
-            const path = await uploadImage(artistId, dataUrl, `extra-${i + 1}`);
+            const path = await uploadImage(artistId, dataUrl, `${flavor}-${i + 1}`);
             const { error: iErr } = await supabase
               .from("generated_images")
               .insert({
@@ -257,7 +305,7 @@ Deno.serve(async (req) => {
         );
         const results = await Promise.allSettled(tasks);
         const failed = results.filter((r) => r.status === "rejected").length;
-        if (failed) console.error(`Extra: ${failed} failed`);
+        if (failed) console.error(`Extra (${flavor}): ${failed} failed`);
       })();
       // @ts-ignore EdgeRuntime is provided by Deno deploy
       EdgeRuntime.waitUntil(job);

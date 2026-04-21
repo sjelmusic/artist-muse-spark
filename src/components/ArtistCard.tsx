@@ -92,14 +92,14 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
-  const generateExtra = async () => {
+  const generateExtra = async (flavor: "wild" | "cinematic" | "aesthetic") => {
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("generate-images", {
-        body: { mode: "extra", artistId: artist.id },
+        body: { mode: "extra", artistId: artist.id, flavor },
       });
       if (error) throw error;
-      toast.success(`Generating 10 more wild ones for ${artist.name}…`);
+      toast.success(`Generating 10 ${flavor} shots for ${artist.name}…`);
     } catch (e: any) {
       toast.error(e.message || "Failed");
     } finally {
@@ -273,10 +273,28 @@ export function ArtistCard({ artist, onChange }: Props) {
                   size="sm"
                   variant="outline"
                   disabled={busy}
-                  onClick={generateExtra}
+                  onClick={() => generateExtra("wild")}
                   className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> 10 wild
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => generateExtra("cinematic")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 10 cinematic
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => generateExtra("aesthetic")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 10 aesthetic
                 </Button>
               </div>
             </div>
