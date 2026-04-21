@@ -353,12 +353,12 @@ Deno.serve(async (req) => {
       } as const;
       const cfg = flavorConfig[flavor];
 
-      const songs: string[] = artist.songs || [];
+      const keywords: string[] = artist.songs || [];
       const job = (async () => {
         const tasks = Array.from({ length: 10 }, (_, i) =>
           (async () => {
-            const song = songs.length ? songs[i % songs.length] : null;
-            const songLine = song ? ` Loose vibe inspired by the song "${song}".` : "";
+            const keyword = keywords.length ? keywords[i % keywords.length] : null;
+            const songLine = keyword ? ` Loose vibe inspired by this aesthetic keyword: "${keyword}".` : "";
             const intro =
               flavor === "plain"
                 ? `you are creating a real flash image that captures the VIBE and PERSONALITY of the artist ${artist.name}. NO PERSON IN THE FRAME. use the reference image only to read their aesthetic world.`
@@ -375,7 +375,7 @@ Deno.serve(async (req) => {
                 artist_id: artistId,
                 storage_path: path,
                 kind: "variant",
-                song,
+                song: keyword,
                 prompt,
               });
             if (iErr) throw iErr;
