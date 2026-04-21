@@ -206,21 +206,68 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (mode === "extra") {
+      const refId = artist.reference_image_id;
+      if (!refId) throw new Error("No reference image chosen yet");
+
+      const { data: refImg, error: rErr } = await supabase
+        .from("generated_images")
+        .select("*")
+        .eq("id", refId)
+        .single();
+      if (rErr || !refImg) throw new Error("Reference image not found");
+
+      const { data: pub } = supabase.storage
+        .from("artist-images")
+        .getPublicUrl(refImg.storage_path);
+      const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
+
+      // Extra creative pools — weirder, more abstract, more random
+      const creativeLocations = [
+        "neon-lit laundromat at 3am", "abandoned swimming pool", "inside a giant inflatable", "underneath a highway overpass", "claustrophobic phone booth", "supermarket frozen aisle", "behind stacked CRT TVs", "wrapped in tulle and plastic sheeting", "carwash mid-cycle with foam everywhere", "field of tall dry grass", "pile of stuffed animals", "industrial freezer", "miles of mirrors", "blown-out white void", "pitch black with one harsh light", "construction site at night", "behind a sheer red curtain", "in a kiddie pool of milk", "sandwiched between two mattresses", "covered in confetti aftermath",
+      ];
+      const creativeMoods = [
+        "shot through warped glass", "double exposure feel", "extreme close crop on face", "wide shot, subject tiny in frame", "shot from below looking up", "shot from directly above", "blurry motion smear with sharp face", "smoke / haze filling the frame", "wet hair, dripping", "covered in glitter", "wrapped in cellophane", "with random props (lollipop, payphone, cigarette)", "deadpan stare", "laughing mid-blink", "screaming silently", "eyes closed, peaceful",
+      ];
+      const intensities = ["dreamy", "deranged", "deadpan", "euphoric", "melancholic", "intimate", "alien", "nostalgic 90s", "y2k chaos", "post-party comedown"];
+
+      const songs: string[] = artist.songs || [];
+      const job = (async () => {
+        const tasks = Array.from({ length: 10 }, (_, i) =>
+          (async () => {
+            const song = songs.length ? songs[i % songs.length] : null;
+            const songLine = song ? ` Loose vibe inspired by the song "${song}".` : "";
+            const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. exactly the same person — keep the face identical — but be CREATIVE, abstract, weird, unexpected. different outfit, different pose. setting: ${pick(creativeLocations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(creativeMoods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(intensities, i)}.${songLine}`;
+            const dataUrl = await callAI([
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: refDataUrl } },
+            ]);
+            const path = await uploadImage(artistId, dataUrl, `extra-${i + 1}`);
+            const { error: iErr } = await supabase
+              .from("generated_images")
+              .insert({
+                artist_id: artistId,
+                storage_path: path,
+                kind: "variant",
+                song,
+                prompt,
+              });
+            if (iErr) throw iErr;
+          })()
+        );
+        const results = await Promise.allSettled(tasks);
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed) console.error(`Extra: ${failed} failed`);
+      })();
+      // @ts-ignore EdgeRuntime is provided by Deno deploy
+      EdgeRuntime.waitUntil(job);
+      return new Response(JSON.stringify({ accepted: true }), {
+        status: 202,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown mode" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
-    console.error("generate-images error:", msg);
-    const status =
-      msg === "RATE_LIMIT" ? 429 : msg === "PAYMENT_REQUIRED" ? 402 : 500;
-    return new Response(JSON.stringify({ error: msg }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
