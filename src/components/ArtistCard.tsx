@@ -7,6 +7,22 @@ import { Check, Download, Loader2, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
+// Resize an image blob into a centered square JPEG of the given size (cover crop).
+async function resizeToSquare(blob: Blob, size: number): Promise<Blob> {
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const scale = Math.max(size / bitmap.width, size / bitmap.height);
+  const w = bitmap.width * scale;
+  const h = bitmap.height * scale;
+  ctx.drawImage(bitmap, (size - w) / 2, (size - h) / 2, w, h);
+  return await new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.92)
+  );
+}
+
 type Artist = {
   id: string;
   name: string;
