@@ -207,13 +207,13 @@ Deno.serve(async (req) => {
       const refPool = await buildReferencePool(artistId, referenceImageId);
       const pickRef = () => refPool[Math.floor(Math.random() * refPool.length)];
 
-      const songs: string[] = artist.songs || [];
+      const keywords: string[] = artist.songs || [];
       const job = (async () => {
         const variantTasks = Array.from({ length: 6 }, (_, i) =>
           (async () => {
-            const song = songs.length ? songs[i % songs.length] : null;
-            const songLine = song
-              ? ` Setting and mood inspired by the vibe of the song "${song}".`
+            const keyword = keywords.length ? keywords[i % keywords.length] : null;
+            const songLine = keyword
+              ? ` Setting and mood inspired by this aesthetic keyword: "${keyword}".`
               : "";
             const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
             const dataUrl = await callAI([
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
                 artist_id: artistId,
                 storage_path: path,
                 kind: "variant",
-                song,
+                song: keyword,
                 prompt,
               });
             if (iErr) throw iErr;
