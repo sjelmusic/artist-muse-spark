@@ -92,14 +92,14 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
-  const generateExtra = async () => {
+  const generateExtra = async (flavor: "wild" | "cinematic" | "aesthetic") => {
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("generate-images", {
-        body: { mode: "extra", artistId: artist.id },
+        body: { mode: "extra", artistId: artist.id, flavor },
       });
       if (error) throw error;
-      toast.success(`Generating 10 more wild ones for ${artist.name}…`);
+      toast.success(`Generating 10 ${flavor} shots for ${artist.name}…`);
     } catch (e: any) {
       toast.error(e.message || "Failed");
     } finally {
