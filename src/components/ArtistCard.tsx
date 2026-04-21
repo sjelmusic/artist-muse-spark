@@ -120,14 +120,16 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
     toast.info("Resizing to 3000×3000 and zipping…");
     const zip = new JSZip();
-    const folder = zip.folder(artist.name.replace(/[^a-z0-9]/gi, "_"))!;
+    const safeName = artist.name.replace(/[^a-z0-9]/gi, "_");
+    const folder = zip.folder(safeName)!;
+    let idx = 1;
     for (const img of exportable) {
       const url = publicUrl(img.storage_path);
       const res = await fetch(url);
       const blob = await res.blob();
       const resized = await resizeToSquare(blob, 3000);
-      const fname = `${img.kind}-${img.id.slice(0, 6)}.jpg`;
-      folder.file(fname, resized);
+      folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
+      idx++;
     }
     const out = await zip.generateAsync({ type: "blob" });
     saveAs(out, `${artist.name}.zip`);
