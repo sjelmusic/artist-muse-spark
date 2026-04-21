@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { publicUrl } from "@/lib/storage";
+import { fetchImageBlob, publicUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Check, Download, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
@@ -164,16 +164,27 @@ export function ArtistCard({ artist, onChange }: Props) {
     const safeName = artist.name.replace(/[^a-z0-9]/gi, "_");
     const folder = zip.folder(safeName)!;
     let idx = 1;
+    let skipped = 0;
     for (const img of exportable) {
-      const url = publicUrl(img.storage_path);
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const resized = await resizeToSquare(blob, 3000);
-      folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
-      idx++;
+      try {
+        const blob = await fetchImageBlob(img.storage_path);
+        const resized = await resizeToSquare(blob, 3000);
+        folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
+        idx++;
+      } catch (error) {
+        console.error("Skipping export image", img.storage_path, error);
+        skipped++;
+      }
+    }
+    if (idx === 1) {
+      toast.error("No valid images could be exported");
+      return;
     }
     const out = await zip.generateAsync({ type: "blob" });
     saveAs(out, `${artist.name}.zip`);
+    if (skipped) {
+      toast.warning(`Exported with ${skipped} skipped bad file${skipped === 1 ? "" : "s"}`);
+    }
   };
 
   const isLoading =
