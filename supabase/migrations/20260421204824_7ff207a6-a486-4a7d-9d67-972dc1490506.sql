@@ -1,0 +1,2 @@
+ALTER TABLE public.generated_images ADD COLUMN IF NOT EXISTS liked boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_generated_images_liked ON public.generated_images(artist_id, liked) WHERE liked = true;

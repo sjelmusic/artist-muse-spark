@@ -51,6 +51,7 @@ export type Database = {
           id: string
           is_reference: boolean
           kind: string
+          liked: boolean
           prompt: string | null
           song: string | null
           storage_path: string
@@ -61,6 +62,7 @@ export type Database = {
           id?: string
           is_reference?: boolean
           kind: string
+          liked?: boolean
           prompt?: string | null
           song?: string | null
           storage_path: string
@@ -71,6 +73,7 @@ export type Database = {
           id?: string
           is_reference?: boolean
           kind?: string
+          liked?: boolean
           prompt?: string | null
           song?: string | null
           storage_path?: string

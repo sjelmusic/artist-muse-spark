@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchImageBlob, publicUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, Download, Heart, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -64,6 +64,7 @@ type Image = {
   kind: string;
   song: string | null;
   is_reference: boolean;
+  liked: boolean;
 };
 
 interface Props {
@@ -138,6 +139,20 @@ export function ArtistCard({ artist, onChange }: Props) {
     setImages((prev) => prev.filter((i) => i.id !== img.id));
     void supabase.from("generated_images").delete().eq("id", img.id);
     void supabase.storage.from("artist-images").remove([img.storage_path]);
+  };
+
+  const toggleLike = async (img: Image) => {
+    const next = !img.liked;
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: next } : i)));
+    const { error } = await supabase
+      .from("generated_images")
+      .update({ liked: next })
+      .eq("id", img.id);
+    if (error) {
+      // revert
+      setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: !next } : i)));
+      toast.error("couldn't save like");
+    }
   };
 
   const deleteArtist = async () => {
@@ -288,13 +303,26 @@ export function ArtistCard({ artist, onChange }: Props) {
                         </div>
                       )}
                       {!chosen && (
-                        <button
-                          onClick={() => deleteImage(img)}
-                          className="absolute top-2 right-2 bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all z-10"
-                          title="delete"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                        <div className="absolute top-2 right-2 flex gap-1 z-10">
+                          <button
+                            onClick={() => toggleLike(img)}
+                            className={`border-2 border-foreground p-1 transition-all ${
+                              img.liked
+                                ? "bg-accent text-accent-foreground opacity-100"
+                                : "bg-background opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground"
+                            }`}
+                            title={img.liked ? "liked — used as reference" : "like"}
+                          >
+                            <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
+                          </button>
+                          <button
+                            onClick={() => deleteImage(img)}
+                            className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
+                            title="delete"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -376,13 +404,26 @@ export function ArtistCard({ artist, onChange }: Props) {
                           {img.song}
                         </div>
                       )}
-                      <button
-                        onClick={() => deleteImage(img)}
-                        className="absolute top-2 right-2 bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
-                        title="delete"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        <button
+                          onClick={() => toggleLike(img)}
+                          className={`border-2 border-foreground p-1 transition-all ${
+                            img.liked
+                              ? "bg-accent text-accent-foreground opacity-100"
+                              : "bg-background opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                          title={img.liked ? "liked — used as reference" : "like"}
+                        >
+                          <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
+                        </button>
+                        <button
+                          onClick={() => deleteImage(img)}
+                          className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
+                          title="delete"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   ))}
             </div>

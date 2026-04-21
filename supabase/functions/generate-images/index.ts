@@ -84,6 +84,48 @@ async function fetchAsDataUrl(publicUrl: string): Promise<string> {
   return `data:${mime};base64,${btoa(binary)}`;
 }
 
+// Build the pool of reference images for an artist: the chosen reference + any liked images.
+// De-duplicates and returns their data URLs, ready to be randomly sampled per generation.
+async function buildReferencePool(
+  artistId: string,
+  chosenReferenceId: string | null
+): Promise<string[]> {
+  const ids = new Set<string>();
+  const rows: { storage_path: string }[] = [];
+
+  if (chosenReferenceId) {
+    const { data } = await supabase
+      .from("generated_images")
+      .select("id, storage_path")
+      .eq("id", chosenReferenceId)
+      .maybeSingle();
+    if (data) {
+      ids.add(data.id);
+      rows.push({ storage_path: data.storage_path });
+    }
+  }
+
+  const { data: liked } = await supabase
+    .from("generated_images")
+    .select("id, storage_path")
+    .eq("artist_id", artistId)
+    .eq("liked", true);
+  for (const row of liked || []) {
+    if (!ids.has(row.id)) {
+      ids.add(row.id);
+      rows.push({ storage_path: row.storage_path });
+    }
+  }
+
+  const urls = await Promise.all(
+    rows.map(async (r) => {
+      const { data: pub } = supabase.storage.from("artist-images").getPublicUrl(r.storage_path);
+      return await fetchAsDataUrl(pub.publicUrl);
+    })
+  );
+  return urls;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -162,10 +204,8 @@ Deno.serve(async (req) => {
         .update({ reference_image_id: referenceImageId, status: "reference_chosen" })
         .eq("id", artistId);
 
-      const { data: pub } = supabase.storage
-        .from("artist-images")
-        .getPublicUrl(refImg.storage_path);
-      const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
+      const refPool = await buildReferencePool(artistId, referenceImageId);
+      const pickRef = () => refPool[Math.floor(Math.random() * refPool.length)];
 
       const songs: string[] = artist.songs || [];
       const job = (async () => {
@@ -178,7 +218,7 @@ Deno.serve(async (req) => {
             const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: refDataUrl } },
+              { type: "image_url", image_url: { url: pickRef() } },
             ]);
             const path = await uploadImage(artistId, dataUrl, `variant-${i + 1}`);
             const { error: iErr } = await supabase
@@ -218,17 +258,9 @@ Deno.serve(async (req) => {
       const refId = artist.reference_image_id;
       if (!refId) throw new Error("No reference image chosen yet");
 
-      const { data: refImg, error: rErr } = await supabase
-        .from("generated_images")
-        .select("*")
-        .eq("id", refId)
-        .single();
-      if (rErr || !refImg) throw new Error("Reference image not found");
-
-      const { data: pub } = supabase.storage
-        .from("artist-images")
-        .getPublicUrl(refImg.storage_path);
-      const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
+      const refPool = await buildReferencePool(artistId, refId);
+      if (!refPool.length) throw new Error("Reference image not found");
+      const pickRef = () => refPool[Math.floor(Math.random() * refPool.length)];
 
       // ---- WILD ----
       const wildLocations = [
@@ -334,7 +366,7 @@ Deno.serve(async (req) => {
             const prompt = `${intro} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} setting: ${pick(cfg.locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: refDataUrl } },
+              { type: "image_url", image_url: { url: pickRef() } },
             ]);
             const path = await uploadImage(artistId, dataUrl, `${flavor}-${i + 1}`);
             const { error: iErr } = await supabase
