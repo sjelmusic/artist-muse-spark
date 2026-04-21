@@ -376,7 +376,7 @@ Deno.serve(async (req) => {
           (async () => {
             const sampled = sampleKeywords(keywords);
             const songLine = sampled
-              ? ` Loosely weave in these aesthetic keywords (subtle, not literal): ${sampled}.`
+              ? ` IMPORTANT — strongly anchor the mood, setting, styling and color palette around these aesthetic keywords: ${sampled}. Let them clearly drive the vibe.`
               : "";
             const intro =
               flavor === "plain"
