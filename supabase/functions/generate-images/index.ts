@@ -90,11 +90,21 @@ Deno.serve(async (req) => {
       .single();
     if (aErr || !artist) throw new Error("Artist not found");
 
+    // Variation pools — flash lighting always stays
+    const colors = ["warm red", "icy blue", "acid green", "buttery yellow", "dusty pink", "deep violet", "burnt orange", "cool grey", "cream", "electric teal"];
+    const motions = ["subtle movement", "completely still", "mid-step motion", "hair caught in motion", "frozen pose", "slight sway", "no movement at all"];
+    const temps = ["warm tones", "cool tones", "neutral tones", "high contrast", "soft warm haze", "crisp cold air"];
+    const times = ["golden hour", "midday", "blue hour", "late night", "early morning", "overcast afternoon", "dusk"];
+    const locations = ["empty hallway", "concrete stairwell", "white studio", "tiled bathroom", "parking garage", "rooftop", "kitchen corner", "hotel lobby", "back alley", "bedroom with sheer curtains", "elevator", "diner booth"];
+    const pick = <T,>(arr: T[], i: number) => arr[(i + Math.floor(Math.random() * arr.length)) % arr.length];
+
     if (mode === "headshots") {
-      const prompt = `you are creating a real flash image in minimal environment for a cool gen-z person called ${artist.name}. Very real very cool very minimal artsy aesthetic. not cluttered. movement`;
+      const basePrompt = (i: number) =>
+        `you are creating a real flash image for a cool gen-z person called ${artist.name}. always shot with direct flash lighting. very real, very cool, minimal artsy aesthetic, not cluttered. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.`;
       // Generate 4 headshots in parallel — each inserts as soon as it finishes
       const tasks = Array.from({ length: 4 }, (_, i) =>
         (async () => {
+          const prompt = basePrompt(i);
           const dataUrl = await callAI(prompt);
           const path = await uploadImage(artistId, dataUrl, `headshot-${i + 1}`);
           const { data: img, error: iErr } = await supabase
