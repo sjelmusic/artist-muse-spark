@@ -303,13 +303,26 @@ export function ArtistCard({ artist, onChange }: Props) {
                         </div>
                       )}
                       {!chosen && (
-                        <button
-                          onClick={() => deleteImage(img)}
-                          className="absolute top-2 right-2 bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all z-10"
-                          title="delete"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                        <div className="absolute top-2 right-2 flex gap-1 z-10">
+                          <button
+                            onClick={() => toggleLike(img)}
+                            className={`border-2 border-foreground p-1 transition-all ${
+                              img.liked
+                                ? "bg-accent text-accent-foreground opacity-100"
+                                : "bg-background opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground"
+                            }`}
+                            title={img.liked ? "liked — used as reference" : "like"}
+                          >
+                            <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
+                          </button>
+                          <button
+                            onClick={() => deleteImage(img)}
+                            className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
+                            title="delete"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
