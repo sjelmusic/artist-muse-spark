@@ -163,16 +163,25 @@ export function ArtistCard({ artist, onChange }: Props) {
     const zip = new JSZip();
     const safeName = artist.name.replace(/[^a-z0-9]/gi, "_");
     const folder = zip.folder(safeName)!;
+    const results = await Promise.all(
+      exportable.map(async (img) => {
+        try {
+          const blob = await fetchImageBlob(img.storage_path);
+          const resized = await resizeToSquare(blob, 3000);
+          return { ok: true as const, resized };
+        } catch (error) {
+          console.error("Skipping export image", img.storage_path, error);
+          return { ok: false as const };
+        }
+      })
+    );
     let idx = 1;
     let skipped = 0;
-    for (const img of exportable) {
-      try {
-        const blob = await fetchImageBlob(img.storage_path);
-        const resized = await resizeToSquare(blob, 3000);
-        folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
+    for (const r of results) {
+      if (r.ok) {
+        folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, r.resized);
         idx++;
-      } catch (error) {
-        console.error("Skipping export image", img.storage_path, error);
+      } else {
         skipped++;
       }
     }
