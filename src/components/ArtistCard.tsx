@@ -141,6 +141,20 @@ export function ArtistCard({ artist, onChange }: Props) {
     void supabase.storage.from("artist-images").remove([img.storage_path]);
   };
 
+  const toggleLike = async (img: Image) => {
+    const next = !img.liked;
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: next } : i)));
+    const { error } = await supabase
+      .from("generated_images")
+      .update({ liked: next })
+      .eq("id", img.id);
+    if (error) {
+      // revert
+      setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: !next } : i)));
+      toast.error("couldn't save like");
+    }
+  };
+
   const deleteArtist = async () => {
     if (!confirm(`Delete ${artist.name} and all images?`)) return;
     const paths = images.map((i) => i.storage_path);
