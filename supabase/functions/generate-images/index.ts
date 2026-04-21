@@ -155,15 +155,15 @@ Deno.serve(async (req) => {
     const locations = ["empty hallway", "concrete stairwell", "white studio", "tiled bathroom", "parking garage", "rooftop", "kitchen corner", "hotel lobby", "back alley", "bedroom with sheer curtains", "elevator", "diner booth"];
     const pick = <T,>(arr: T[], i: number) => arr[(i + Math.floor(Math.random() * arr.length)) % arr.length];
 
-    // Randomly sample 0–N keywords for a given prompt. Distribution leans light:
-    // ~30% none, ~40% one, ~20% two, ~10% three. Returns a phrase fragment or "".
+    // Randomly sample 0–N keywords for a given prompt. Distribution leans heavier now:
+    // ~10% none, ~35% one, ~35% two, ~20% three. Returns a phrase fragment or "".
     const sampleKeywords = (pool: string[]): string => {
       if (!pool.length) return "";
       const r = Math.random();
       let count = 0;
-      if (r < 0.3) count = 0;
-      else if (r < 0.7) count = 1;
-      else if (r < 0.9) count = 2;
+      if (r < 0.1) count = 0;
+      else if (r < 0.45) count = 1;
+      else if (r < 0.8) count = 2;
       else count = 3;
       count = Math.min(count, pool.length);
       if (count === 0) return "";
