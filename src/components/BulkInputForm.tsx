@@ -10,9 +10,9 @@ interface Props {
   onCreated: () => void;
 }
 
-const PLACEHOLDER = `Olivia Dean | Dive, The Hardest Part, Ladies Room
-Fred again | Delilah, Marea, Kammy
-Raye | Escapism, Ice Cream Man`;
+const PLACEHOLDER = `Olivia Dean | smoky jazz bar, velvet, golden hour
+Fred again | rave afterglow, blurred neon, sweaty euphoria
+Raye | red lipstick, late night confession, sequins`;
 
 export function BulkInputForm({ onCreated }: Props) {
   const [text, setText] = useState("");
@@ -162,7 +162,7 @@ export function BulkInputForm({ onCreated }: Props) {
         <div>
           <h2 className="font-serif-display text-3xl">paste the lineup.</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            One artist per line. Format: <code className="bg-secondary px-1.5 py-0.5">Name | song, song, song</code>
+            One artist per line. Format: <code className="bg-secondary px-1.5 py-0.5">Name | keyword, keyword, keyword</code>
           </p>
         </div>
         <Textarea
@@ -236,7 +236,7 @@ export function BulkInputForm({ onCreated }: Props) {
             <Input
               value={soloSongs}
               onChange={(e) => setSoloSongs(e.target.value)}
-              placeholder="songs (comma separated, optional)"
+              placeholder="keywords (comma separated, optional)"
               maxLength={400}
               className="border-2 border-foreground bg-background focus-visible:ring-0 focus-visible:ring-offset-0"
             />
