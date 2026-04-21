@@ -118,7 +118,7 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
-  const generateExtra = async (flavor: "wild" | "cinematic" | "aesthetic") => {
+  const generateExtra = async (flavor: "wild" | "cinematic" | "aesthetic" | "plain") => {
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("generate-images", {
@@ -341,6 +341,15 @@ export function ArtistCard({ artist, onChange }: Props) {
                   className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> 10 aesthetic
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => generateExtra("plain")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 10 plain
                 </Button>
               </div>
             </div>
