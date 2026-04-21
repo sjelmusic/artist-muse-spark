@@ -5,7 +5,7 @@ import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
-import { publicUrl } from "@/lib/storage";
+import { fetchImageBlob } from "@/lib/storage";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -54,6 +54,7 @@ const Index = () => {
       toast.info("resizing every approved image to 3000×3000…");
       const zip = new JSZip();
       let total = 0;
+      let skipped = 0;
       for (const a of artists) {
         const mine = imgs.filter((i) => i.artist_id === a.id);
         const chosen = mine.find((i) => i.id === a.reference_image_id);
@@ -66,12 +67,16 @@ const Index = () => {
         const folder = zip.folder(safeName)!;
         let idx = 1;
         for (const img of exportable) {
-          const res = await fetch(publicUrl(img.storage_path));
-          const blob = await res.blob();
-          const resized = await resizeToSquare(blob, 3000);
-          folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
-          idx++;
-          total++;
+          try {
+            const blob = await fetchImageBlob(img.storage_path);
+            const resized = await resizeToSquare(blob, 3000);
+            folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
+            idx++;
+            total++;
+          } catch (error) {
+            console.error("Skipping export image", img.storage_path, error);
+            skipped++;
+          }
         }
       }
       if (!total) {
@@ -80,7 +85,11 @@ const Index = () => {
       }
       const out = await zip.generateAsync({ type: "blob" });
       saveAs(out, `aesthetic-engine-lineup.zip`);
-      toast.success(`zipped ${total} images across the lineup`);
+      toast.success(
+        skipped
+          ? `zipped ${total} images across the lineup · skipped ${skipped} bad files`
+          : `zipped ${total} images across the lineup`
+      );
     } catch (e: any) {
       toast.error(e.message || "zip failed");
     } finally {
