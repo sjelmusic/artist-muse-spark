@@ -1,0 +1,258 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { publicUrl } from "@/lib/storage";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Check, Download, Loader2, Trash2, Wand2, X } from "lucide-react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+
+type Artist = {
+  id: string;
+  name: string;
+  songs: string[];
+  status: string;
+  reference_image_id: string | null;
+};
+
+type Image = {
+  id: string;
+  artist_id: string;
+  storage_path: string;
+  kind: string;
+  song: string | null;
+  is_reference: boolean;
+};
+
+interface Props {
+  artist: Artist;
+  onChange: () => void;
+}
+
+export function ArtistCard({ artist, onChange }: Props) {
+  const [images, setImages] = useState<Image[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("generated_images")
+      .select("*")
+      .eq("artist_id", artist.id)
+      .order("created_at", { ascending: true });
+    setImages((data as Image[]) || []);
+  };
+
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel(`artist-${artist.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "generated_images", filter: `artist_id=eq.${artist.id}` },
+        () => load()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [artist.id]);
+
+  const headshots = images.filter((i) => i.kind === "headshot");
+  const variants = images.filter((i) => i.kind === "variant");
+
+  const chooseReference = async (img: Image) => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.functions.invoke("generate-images", {
+        body: { mode: "variants", artistId: artist.id, referenceImageId: img.id },
+      });
+      if (error) throw error;
+      toast.success(`Variants ready for ${artist.name}`);
+      onChange();
+    } catch (e: any) {
+      toast.error(e.message || "Failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteImage = async (img: Image) => {
+    await supabase.storage.from("artist-images").remove([img.storage_path]);
+    await supabase.from("generated_images").delete().eq("id", img.id);
+  };
+
+  const deleteArtist = async () => {
+    if (!confirm(`Delete ${artist.name} and all images?`)) return;
+    const paths = images.map((i) => i.storage_path);
+    if (paths.length) await supabase.storage.from("artist-images").remove(paths);
+    await supabase.from("artists").delete().eq("id", artist.id);
+    onChange();
+  };
+
+  const downloadAll = async () => {
+    if (!images.length) return;
+    toast.info("Zipping images…");
+    const zip = new JSZip();
+    const folder = zip.folder(artist.name.replace(/[^a-z0-9]/gi, "_"))!;
+    for (const img of images) {
+      const url = publicUrl(img.storage_path);
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const ext = img.storage_path.split(".").pop() || "png";
+      const fname = `${img.kind}-${img.id.slice(0, 6)}.${ext}`;
+      folder.file(fname, blob);
+    }
+    const out = await zip.generateAsync({ type: "blob" });
+    saveAs(out, `${artist.name}.zip`);
+  };
+
+  const isLoading =
+    artist.status === "pending" ||
+    (artist.status === "reference_chosen" && variants.length === 0);
+
+  return (
+    <div className="bg-card border-2 border-foreground shadow-brutal-lg overflow-hidden">
+      <header className="flex items-start justify-between p-5 border-b-2 border-foreground bg-background">
+        <div>
+          <h3 className="font-serif-display text-4xl leading-none">{artist.name}</h3>
+          {artist.songs.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-2 uppercase tracking-wider">
+              {artist.songs.join(" · ")}
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {images.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={downloadAll}
+              className="border-2 border-foreground hover:bg-foreground hover:text-background"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              ZIP
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={deleteArtist}
+            className="border-2 border-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="p-5 space-y-6">
+        {/* Headshots */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs uppercase tracking-[0.2em] font-bold">
+              {artist.reference_image_id ? "01 — chosen reference" : "01 — pick your headshot"}
+            </h4>
+            {isLoading && headshots.length === 0 && (
+              <span className="text-xs flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" /> generating
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {headshots.length === 0
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="aspect-square bg-secondary border-2 border-foreground grain animate-pulse"
+                  />
+                ))
+              : headshots.map((img) => {
+                  const chosen = img.id === artist.reference_image_id;
+                  const dim = artist.reference_image_id && !chosen;
+                  return (
+                    <div key={img.id} className="relative group">
+                      <div
+                        className={`aspect-square border-2 border-foreground overflow-hidden ${
+                          chosen ? "shadow-brutal-accent ring-4 ring-accent" : ""
+                        } ${dim ? "opacity-30" : ""}`}
+                      >
+                        <img
+                          src={publicUrl(img.storage_path)}
+                          alt={`${artist.name} headshot`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      {!artist.reference_image_id && (
+                        <button
+                          disabled={busy}
+                          onClick={() => chooseReference(img)}
+                          className="absolute inset-0 bg-foreground/0 hover:bg-foreground/70 transition-colors flex items-center justify-center opacity-0 hover:opacity-100"
+                        >
+                          <span className="bg-accent text-accent-foreground px-3 py-1.5 text-xs font-bold uppercase tracking-wider border-2 border-background flex items-center gap-1">
+                            <Wand2 className="w-3 h-3" /> use this
+                          </span>
+                        </button>
+                      )}
+                      {chosen && (
+                        <div className="absolute top-2 right-2 bg-accent text-accent-foreground p-1 border-2 border-foreground">
+                          <Check className="w-3 h-3" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+          </div>
+        </section>
+
+        {/* Variants */}
+        {artist.reference_image_id && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs uppercase tracking-[0.2em] font-bold">
+                02 — the set ({variants.length}/6)
+              </h4>
+              {isLoading && (
+                <span className="text-xs flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" /> generating
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {variants.length === 0 && isLoading
+                ? Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[3/4] bg-secondary border-2 border-foreground grain animate-pulse"
+                    />
+                  ))
+                : variants.map((img) => (
+                    <div key={img.id} className="relative group">
+                      <div className="aspect-[3/4] border-2 border-foreground overflow-hidden">
+                        <img
+                          src={publicUrl(img.storage_path)}
+                          alt={`${artist.name} variant`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      {img.song && (
+                        <div className="absolute bottom-2 left-2 right-2 bg-background/90 border border-foreground px-2 py-1 text-[10px] uppercase tracking-wider truncate">
+                          {img.song}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => deleteImage(img)}
+                        className="absolute top-2 right-2 bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
+                        title="delete"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
