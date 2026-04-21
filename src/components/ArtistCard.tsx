@@ -118,7 +118,7 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
-  const generateExtra = async (flavor: "wild" | "cinematic" | "aesthetic") => {
+  const generateExtra = async (flavor: "wild" | "cinematic" | "aesthetic" | "plain") => {
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("generate-images", {
