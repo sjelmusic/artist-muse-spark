@@ -238,12 +238,12 @@ export function ArtistCard({ artist, onChange }: Props) {
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <div
                       key={i}
-                      className="aspect-[3/4] bg-secondary border-2 border-foreground grain animate-pulse"
+                      className="aspect-square bg-secondary border-2 border-foreground grain animate-pulse"
                     />
                   ))
                 : variants.map((img) => (
                     <div key={img.id} className="relative group">
-                      <div className="aspect-[3/4] border-2 border-foreground overflow-hidden">
+                      <div className="aspect-square border-2 border-foreground overflow-hidden">
                         <img
                           src={publicUrl(img.storage_path)}
                           alt={`${artist.name} variant`}
