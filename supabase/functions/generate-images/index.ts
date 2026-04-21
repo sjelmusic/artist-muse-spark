@@ -222,14 +222,14 @@ Deno.serve(async (req) => {
         .getPublicUrl(refImg.storage_path);
       const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
 
-      // Extra creative pools — weirder, more abstract, more random
+      // Album-cover aesthetic pools — elevated, editorial, still flash-real
       const creativeLocations = [
-        "neon-lit laundromat at 3am", "abandoned swimming pool", "inside a giant inflatable", "underneath a highway overpass", "claustrophobic phone booth", "supermarket frozen aisle", "behind stacked CRT TVs", "wrapped in tulle and plastic sheeting", "carwash mid-cycle with foam everywhere", "field of tall dry grass", "pile of stuffed animals", "industrial freezer", "miles of mirrors", "blown-out white void", "pitch black with one harsh light", "construction site at night", "behind a sheer red curtain", "in a kiddie pool of milk", "sandwiched between two mattresses", "covered in confetti aftermath",
+        "empty motel room with one lamp on", "long hotel corridor with patterned carpet", "rain-soaked city street at night", "minimal white gallery wall", "vintage car interior", "diner counter at 2am", "stairwell with dramatic shadows", "field of wildflowers at dusk", "marble bathroom with soft light", "polished concrete loft", "sun-bleached parking lot", "near a swimming pool at golden hour", "warm wood-paneled room", "draped velvet backdrop", "balcony overlooking city lights", "single chair in an empty studio", "garden with overgrown greenery", "passenger seat of a car at night", "glass-walled phone booth", "wide open desert road",
       ];
       const creativeMoods = [
-        "shot through warped glass", "double exposure feel", "extreme close crop on face", "wide shot, subject tiny in frame", "shot from below looking up", "shot from directly above", "blurry motion smear with sharp face", "smoke / haze filling the frame", "wet hair, dripping", "covered in glitter", "wrapped in cellophane", "with random props (lollipop, payphone, cigarette)", "deadpan stare", "laughing mid-blink", "screaming silently", "eyes closed, peaceful",
+        "centered editorial portrait", "cinematic medium shot", "shot on 35mm film feel", "shallow depth of field", "subject looking off-camera", "candid in-between moment", "soft contemplative gaze", "back to camera, head turned", "leaning against a wall", "seated, relaxed posture", "lit cigarette or drink in hand as quiet prop", "wind in hair, calm expression", "holding a flower or single object", "wrapped in a simple coat or jacket",
       ];
-      const intensities = ["dreamy", "deranged", "deadpan", "euphoric", "melancholic", "intimate", "alien", "nostalgic 90s", "y2k chaos", "post-party comedown"];
+      const intensities = ["dreamy and soft", "moody and intimate", "quiet confidence", "romantic melancholy", "cool and detached", "warm nostalgic", "minimal and refined", "cinematic stillness", "indie album cover", "fashion editorial"];
 
       const songs: string[] = artist.songs || [];
       const job = (async () => {
@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
           (async () => {
             const song = songs.length ? songs[i % songs.length] : null;
             const songLine = song ? ` Loose vibe inspired by the song "${song}".` : "";
-            const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. exactly the same person — keep the face identical — but be CREATIVE, abstract, weird, unexpected. different outfit, different pose. setting: ${pick(creativeLocations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(creativeMoods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(intensities, i)}.${songLine}`;
+            const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. exactly the same person — keep the face identical — but make it feel like ALBUM COVER ART: aesthetic, intentional, beautifully composed, editorial. different outfit, different pose. setting: ${pick(creativeLocations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(creativeMoods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(intensities, i)}.${songLine}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: refDataUrl } },
