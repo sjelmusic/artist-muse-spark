@@ -179,6 +179,18 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
+  const downloadOne = async (img: Image) => {
+    try {
+      const blob = await fetchImageBlob(img.storage_path);
+      const resized = await resizeToSquare(blob, 3000);
+      const safeName = artist.name.replace(/[^a-z0-9]/gi, "_");
+      saveAs(resized, `${safeName}-${img.id.slice(0, 6)}.jpg`);
+    } catch (e) {
+      console.error(e);
+      toast.error("download failed");
+    }
+  };
+
   const deleteArtist = async () => {
     if (!confirm(`Delete ${artist.name} and all images?`)) return;
     const paths = images.map((i) => i.storage_path);
