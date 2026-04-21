@@ -8,7 +8,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 // Resize an image blob into a centered square JPEG of the given size (cover crop).
-async function resizeToSquare(blob: Blob, size: number): Promise<Blob> {
+export async function resizeToSquare(blob: Blob, size: number): Promise<Blob> {
   const bitmap = await createImageBitmap(blob);
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -93,8 +93,10 @@ export function ArtistCard({ artist, onChange }: Props) {
   };
 
   const deleteImage = async (img: Image) => {
-    await supabase.storage.from("artist-images").remove([img.storage_path]);
-    await supabase.from("generated_images").delete().eq("id", img.id);
+    // Optimistic UI: remove immediately, then clean up in background
+    setImages((prev) => prev.filter((i) => i.id !== img.id));
+    void supabase.from("generated_images").delete().eq("id", img.id);
+    void supabase.storage.from("artist-images").remove([img.storage_path]);
   };
 
   const deleteArtist = async () => {
@@ -106,11 +108,20 @@ export function ArtistCard({ artist, onChange }: Props) {
   };
 
   const downloadAll = async () => {
-    if (!images.length) return;
+    // Only the chosen reference headshot + remaining (non-deleted) variants
+    const chosen = images.find((i) => i.id === artist.reference_image_id);
+    const exportable = [
+      ...(chosen ? [chosen] : []),
+      ...images.filter((i) => i.kind === "variant"),
+    ];
+    if (!exportable.length) {
+      toast.error("nothing approved to export yet");
+      return;
+    }
     toast.info("Resizing to 3000×3000 and zipping…");
     const zip = new JSZip();
     const folder = zip.folder(artist.name.replace(/[^a-z0-9]/gi, "_"))!;
-    for (const img of images) {
+    for (const img of exportable) {
       const url = publicUrl(img.storage_path);
       const res = await fetch(url);
       const blob = await res.blob();
