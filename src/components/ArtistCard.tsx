@@ -67,7 +67,7 @@ export function ArtistCard({ artist, onChange }: Props) {
         body: { mode: "variants", artistId: artist.id, referenceImageId: img.id },
       });
       if (error) throw error;
-      toast.success(`Variants ready for ${artist.name}`);
+      toast.success(`Generating variants for ${artist.name}…`);
       onChange();
     } catch (e: any) {
       toast.error(e.message || "Failed");
@@ -91,16 +91,16 @@ export function ArtistCard({ artist, onChange }: Props) {
 
   const downloadAll = async () => {
     if (!images.length) return;
-    toast.info("Zipping images…");
+    toast.info("Resizing to 3000×3000 and zipping…");
     const zip = new JSZip();
     const folder = zip.folder(artist.name.replace(/[^a-z0-9]/gi, "_"))!;
     for (const img of images) {
       const url = publicUrl(img.storage_path);
       const res = await fetch(url);
       const blob = await res.blob();
-      const ext = img.storage_path.split(".").pop() || "png";
-      const fname = `${img.kind}-${img.id.slice(0, 6)}.${ext}`;
-      folder.file(fname, blob);
+      const resized = await resizeToSquare(blob, 3000);
+      const fname = `${img.kind}-${img.id.slice(0, 6)}.jpg`;
+      folder.file(fname, resized);
     }
     const out = await zip.generateAsync({ type: "blob" });
     saveAs(out, `${artist.name}.zip`);
