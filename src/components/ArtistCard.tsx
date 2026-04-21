@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Loader2, Trash2, Wand2, X } from "lucide-react";
+import { Check, Download, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -85,6 +85,21 @@ export function ArtistCard({ artist, onChange }: Props) {
       if (error) throw error;
       toast.success(`Generating variants for ${artist.name}…`);
       onChange();
+    } catch (e: any) {
+      toast.error(e.message || "Failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const generateExtra = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.functions.invoke("generate-images", {
+        body: { mode: "extra", artistId: artist.id },
+      });
+      if (error) throw error;
+      toast.success(`Generating 10 more wild ones for ${artist.name}…`);
     } catch (e: any) {
       toast.error(e.message || "Failed");
     } finally {
