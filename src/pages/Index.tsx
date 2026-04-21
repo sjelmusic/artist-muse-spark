@@ -55,6 +55,9 @@ const Index = () => {
       const zip = new JSZip();
       let total = 0;
       let skipped = 0;
+
+      type Job = { artistName: string; img: any };
+      const jobs: Job[] = [];
       for (const a of artists) {
         const mine = imgs.filter((i) => i.artist_id === a.id);
         const chosen = mine.find((i) => i.id === a.reference_image_id);
@@ -62,22 +65,41 @@ const Index = () => {
           ...(chosen ? [chosen] : []),
           ...mine.filter((i) => i.kind === "variant"),
         ];
-        if (!exportable.length) continue;
-        const safeName = a.name.replace(/[^a-z0-9]/gi, "_");
-        const folder = zip.folder(safeName)!;
-        let idx = 1;
-        for (const img of exportable) {
-          try {
-            const blob = await fetchImageBlob(img.storage_path);
-            const resized = await resizeToSquare(blob, 3000);
-            folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
-            idx++;
-            total++;
-          } catch (error) {
-            console.error("Skipping export image", img.storage_path, error);
-            skipped++;
-          }
+        for (const img of exportable) jobs.push({ artistName: a.name, img });
+      }
+
+      // Process in parallel chunks to avoid melting the browser on huge lineups
+      const CHUNK = 8;
+      const processed: { artistName: string; resized: Blob | null }[] = [];
+      for (let i = 0; i < jobs.length; i += CHUNK) {
+        const slice = jobs.slice(i, i + CHUNK);
+        const out = await Promise.all(
+          slice.map(async (job) => {
+            try {
+              const blob = await fetchImageBlob(job.img.storage_path);
+              const resized = await resizeToSquare(blob, 3000);
+              return { artistName: job.artistName, resized };
+            } catch (error) {
+              console.error("Skipping export image", job.img.storage_path, error);
+              return { artistName: job.artistName, resized: null };
+            }
+          })
+        );
+        processed.push(...out);
+      }
+
+      const counters = new Map<string, number>();
+      for (const p of processed) {
+        if (!p.resized) {
+          skipped++;
+          continue;
         }
+        const safeName = p.artistName.replace(/[^a-z0-9]/gi, "_");
+        const folder = zip.folder(safeName)!;
+        const idx = (counters.get(safeName) ?? 0) + 1;
+        counters.set(safeName, idx);
+        folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, p.resized);
+        total++;
       }
       if (!total) {
         toast.error("no approved headshots or variants found");
