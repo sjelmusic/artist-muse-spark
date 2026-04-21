@@ -62,12 +62,15 @@ const Index = () => {
           ...mine.filter((i) => i.kind === "variant"),
         ];
         if (!exportable.length) continue;
-        const folder = zip.folder(a.name.replace(/[^a-z0-9]/gi, "_"))!;
+        const safeName = a.name.replace(/[^a-z0-9]/gi, "_");
+        const folder = zip.folder(safeName)!;
+        let idx = 1;
         for (const img of exportable) {
           const res = await fetch(publicUrl(img.storage_path));
           const blob = await res.blob();
           const resized = await resizeToSquare(blob, 3000);
-          folder.file(`${img.kind}-${img.id.slice(0, 6)}.jpg`, resized);
+          folder.file(`${safeName}-${String(idx).padStart(2, "0")}.jpg`, resized);
+          idx++;
           total++;
         }
       }
