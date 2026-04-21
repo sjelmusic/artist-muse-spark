@@ -8,7 +8,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 // Resize an image blob into a centered square JPEG of the given size (cover crop).
-async function resizeToSquare(blob: Blob, size: number): Promise<Blob> {
+export async function resizeToSquare(blob: Blob, size: number): Promise<Blob> {
   const bitmap = await createImageBitmap(blob);
   const canvas = document.createElement("canvas");
   canvas.width = size;
