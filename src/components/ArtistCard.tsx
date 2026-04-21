@@ -387,6 +387,13 @@ export function ArtistCard({ artist, onChange }: Props) {
                             <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
                           </button>
                           <button
+                            onClick={() => downloadOne(img)}
+                            className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background transition-all"
+                            title="download 3000×3000"
+                          >
+                            <Download className="w-3 h-3" />
+                          </button>
+                          <button
                             onClick={() => deleteImage(img)}
                             className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
                             title="delete"
