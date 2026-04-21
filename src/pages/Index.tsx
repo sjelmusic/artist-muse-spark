@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkInputForm } from "@/components/BulkInputForm";
-import { ArtistCard } from "@/components/ArtistCard";
+import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
+import { publicUrl } from "@/lib/storage";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 type Artist = {
   id: string;
@@ -14,6 +20,7 @@ type Artist = {
 
 const Index = () => {
   const [artists, setArtists] = useState<Artist[]>([]);
+  const [zipping, setZipping] = useState(false);
 
   const load = async () => {
     const { data } = await supabase
@@ -33,6 +40,50 @@ const Index = () => {
       supabase.removeChannel(ch);
     };
   }, []);
+
+  const downloadAllArtists = async () => {
+    setZipping(true);
+    try {
+      const { data: imgs } = await supabase
+        .from("generated_images")
+        .select("*");
+      if (!imgs?.length) {
+        toast.error("nothing to export yet");
+        return;
+      }
+      toast.info("resizing every approved image to 3000×3000…");
+      const zip = new JSZip();
+      let total = 0;
+      for (const a of artists) {
+        const mine = imgs.filter((i) => i.artist_id === a.id);
+        const chosen = mine.find((i) => i.id === a.reference_image_id);
+        const exportable = [
+          ...(chosen ? [chosen] : []),
+          ...mine.filter((i) => i.kind === "variant"),
+        ];
+        if (!exportable.length) continue;
+        const folder = zip.folder(a.name.replace(/[^a-z0-9]/gi, "_"))!;
+        for (const img of exportable) {
+          const res = await fetch(publicUrl(img.storage_path));
+          const blob = await res.blob();
+          const resized = await resizeToSquare(blob, 3000);
+          folder.file(`${img.kind}-${img.id.slice(0, 6)}.jpg`, resized);
+          total++;
+        }
+      }
+      if (!total) {
+        toast.error("no approved headshots or variants found");
+        return;
+      }
+      const out = await zip.generateAsync({ type: "blob" });
+      saveAs(out, `aesthetic-engine-lineup.zip`);
+      toast.success(`zipped ${total} images across the lineup`);
+    } catch (e: any) {
+      toast.error(e.message || "zip failed");
+    } finally {
+      setZipping(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background grain">
@@ -60,9 +111,23 @@ const Index = () => {
         <section>
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="font-serif-display text-4xl">the dashboard</h2>
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">
-              {artists.length} artist{artists.length === 1 ? "" : "s"}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                {artists.length} artist{artists.length === 1 ? "" : "s"}
+              </span>
+              {artists.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={zipping}
+                  onClick={downloadAllArtists}
+                  className="border-2 border-foreground hover:bg-foreground hover:text-background"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  {zipping ? "zipping…" : "zip all approved"}
+                </Button>
+              )}
+            </div>
           </div>
 
           {artists.length === 0 ? (
