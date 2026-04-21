@@ -179,6 +179,18 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
+  const downloadOne = async (img: Image) => {
+    try {
+      const blob = await fetchImageBlob(img.storage_path);
+      const resized = await resizeToSquare(blob, 3000);
+      const safeName = artist.name.replace(/[^a-z0-9]/gi, "_");
+      saveAs(resized, `${safeName}-${img.id.slice(0, 6)}.jpg`);
+    } catch (e) {
+      console.error(e);
+      toast.error("download failed");
+    }
+  };
+
   const deleteArtist = async () => {
     if (!confirm(`Delete ${artist.name} and all images?`)) return;
     const paths = images.map((i) => i.storage_path);
@@ -375,6 +387,13 @@ export function ArtistCard({ artist, onChange }: Props) {
                             <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
                           </button>
                           <button
+                            onClick={() => downloadOne(img)}
+                            className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background transition-all"
+                            title="download 3000×3000"
+                          >
+                            <Download className="w-3 h-3" />
+                          </button>
+                          <button
                             onClick={() => deleteImage(img)}
                             className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all"
                             title="delete"
@@ -474,6 +493,13 @@ export function ArtistCard({ artist, onChange }: Props) {
                           title={img.liked ? "liked — used as reference" : "like"}
                         >
                           <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
+                        </button>
+                        <button
+                          onClick={() => downloadOne(img)}
+                          className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background transition-all"
+                          title="download 3000×3000"
+                        >
+                          <Download className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => deleteImage(img)}
