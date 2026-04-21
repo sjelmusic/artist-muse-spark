@@ -183,13 +183,12 @@ export function ArtistCard({ artist, onChange }: Props) {
                 ))
               : headshots.map((img) => {
                   const chosen = img.id === artist.reference_image_id;
-                  const dim = artist.reference_image_id && !chosen;
                   return (
                     <div key={img.id} className="relative group">
                       <div
                         className={`aspect-square border-2 border-foreground overflow-hidden ${
                           chosen ? "shadow-brutal-accent ring-4 ring-accent" : ""
-                        } ${dim ? "opacity-30" : ""}`}
+                        }`}
                       >
                         <img
                           src={publicUrl(img.storage_path)}
@@ -213,6 +212,15 @@ export function ArtistCard({ artist, onChange }: Props) {
                         <div className="absolute top-2 right-2 bg-accent text-accent-foreground p-1 border-2 border-foreground">
                           <Check className="w-3 h-3" />
                         </div>
+                      )}
+                      {!chosen && (
+                        <button
+                          onClick={() => deleteImage(img)}
+                          className="absolute top-2 right-2 bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-all z-10"
+                          title="delete"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
                       )}
                     </div>
                   );
