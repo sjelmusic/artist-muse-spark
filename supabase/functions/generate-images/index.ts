@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
           (async () => {
             const sampled = sampleKeywords(keywords);
             const songLine = sampled
-              ? ` Loosely weave in these aesthetic keywords (subtle, not literal): ${sampled}.`
+              ? ` IMPORTANT — strongly anchor the mood, setting, styling and color palette around these aesthetic keywords: ${sampled}. Let them clearly drive the vibe.`
               : "";
             const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
             const dataUrl = await callAI([
