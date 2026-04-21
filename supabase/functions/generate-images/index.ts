@@ -258,17 +258,9 @@ Deno.serve(async (req) => {
       const refId = artist.reference_image_id;
       if (!refId) throw new Error("No reference image chosen yet");
 
-      const { data: refImg, error: rErr } = await supabase
-        .from("generated_images")
-        .select("*")
-        .eq("id", refId)
-        .single();
-      if (rErr || !refImg) throw new Error("Reference image not found");
-
-      const { data: pub } = supabase.storage
-        .from("artist-images")
-        .getPublicUrl(refImg.storage_path);
-      const refDataUrl = await fetchAsDataUrl(pub.publicUrl);
+      const refPool = await buildReferencePool(artistId, refId);
+      if (!refPool.length) throw new Error("Reference image not found");
+      const pickRef = () => refPool[Math.floor(Math.random() * refPool.length)];
 
       // ---- WILD ----
       const wildLocations = [
@@ -374,7 +366,7 @@ Deno.serve(async (req) => {
             const prompt = `${intro} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} setting: ${pick(cfg.locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: refDataUrl } },
+              { type: "image_url", image_url: { url: pickRef() } },
             ]);
             const path = await uploadImage(artistId, dataUrl, `${flavor}-${i + 1}`);
             const { error: iErr } = await supabase
