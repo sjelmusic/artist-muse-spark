@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchImageBlob, publicUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, Download, Heart, Loader2, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -64,6 +64,7 @@ type Image = {
   kind: string;
   song: string | null;
   is_reference: boolean;
+  liked: boolean;
 };
 
 interface Props {
