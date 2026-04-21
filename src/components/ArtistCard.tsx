@@ -9,15 +9,41 @@ import { saveAs } from "file-saver";
 
 // Resize an image blob into a centered square JPEG of the given size (cover crop).
 export async function resizeToSquare(blob: Blob, size: number): Promise<Blob> {
-  const bitmap = await createImageBitmap(blob);
+  // Try createImageBitmap first; fall back to <img> + objectURL for blobs the
+  // browser refuses to decode directly (some PNG variants, odd MIME types).
+  let source: CanvasImageSource;
+  let width: number;
+  let height: number;
+  try {
+    const bitmap = await createImageBitmap(blob);
+    source = bitmap;
+    width = bitmap.width;
+    height = bitmap.height;
+  } catch {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("image decode failed"));
+        el.src = url;
+      });
+      source = img;
+      width = img.naturalWidth;
+      height = img.naturalHeight;
+    } finally {
+      // Revoke after we've drawn — defer to next tick
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+  }
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d")!;
-  const scale = Math.max(size / bitmap.width, size / bitmap.height);
-  const w = bitmap.width * scale;
-  const h = bitmap.height * scale;
-  ctx.drawImage(bitmap, (size - w) / 2, (size - h) / 2, w, h);
+  const scale = Math.max(size / width, size / height);
+  const w = width * scale;
+  const h = height * scale;
+  ctx.drawImage(source, (size - w) / 2, (size - h) / 2, w, h);
   return await new Promise<Blob>((resolve) =>
     canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.78)
   );
