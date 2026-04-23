@@ -4,6 +4,17 @@ export function publicUrl(path: string) {
   return supabase.storage.from("artist-images").getPublicUrl(path).data.publicUrl;
 }
 
+// Compressed thumbnail URL via Supabase image transform.
+// Used for in-app display so the browser doesn't download multi-MB originals.
+// Downloads & ZIP exports still hit the original via `publicUrl` / `fetchImageBlob`.
+export function thumbUrl(path: string, width = 600) {
+  return supabase.storage
+    .from("artist-images")
+    .getPublicUrl(path, {
+      transform: { width, height: width, resize: "cover", quality: 70 },
+    }).data.publicUrl;
+}
+
 export async function fetchImageBlob(path: string) {
   const res = await fetch(publicUrl(path));
 
