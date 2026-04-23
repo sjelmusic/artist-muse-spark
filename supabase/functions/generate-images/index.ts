@@ -173,8 +173,20 @@ Deno.serve(async (req) => {
     };
 
     if (mode === "headshots") {
-      const basePrompt = (i: number) =>
-        `you are creating a real flash image for a cool gen-z person called ${artist.name}. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.`;
+      const keywords: string[] = artist.songs || [];
+      const basePrompt = (i: number) => {
+        // Headshots lean heavy on keywords too — they should drive who this person IS.
+        let sampled = sampleKeywords(keywords);
+        if (keywords.length && !sampled) {
+          const shuffled = [...keywords].sort(() => Math.random() - 0.5);
+          const count = Math.min(keywords.length, 1 + Math.floor(Math.random() * 3)); // 1–3
+          sampled = shuffled.slice(0, count).map((k) => `"${k}"`).join(", ");
+        }
+        const songLine = sampled
+          ? ` CRITICAL CREATIVE DIRECTION — these keywords define WHO this person is and must drive their look: ${sampled}. Let them shape ethnicity, age, styling, wardrobe, hair, energy, vibe and the world around them. Bring real human diversity — do not default to one type of person.`
+          : "";
+        return `you are creating a real flash image for a cool person called ${artist.name}. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine}`;
+      };
       const job = (async () => {
         const tasks = Array.from({ length: 4 }, (_, i) =>
           (async () => {
@@ -183,7 +195,7 @@ Deno.serve(async (req) => {
             const path = await uploadImage(artistId, dataUrl, `headshot-${i + 1}`);
             const { error: iErr } = await supabase
               .from("generated_images")
-              .insert({ artist_id: artistId, storage_path: path, kind: "headshot", prompt });
+              .insert({ artist_id: artistId, storage_path: path, kind: "headshot", prompt, song: null });
             if (iErr) throw iErr;
           })()
         );
