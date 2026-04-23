@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchImageBlob, publicUrl } from "@/lib/storage";
+import { fetchImageBlob, thumbUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Check, Download, Heart, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
@@ -351,7 +351,7 @@ export function ArtistCard({ artist, onChange }: Props) {
                         }`}
                       >
                         <img
-                          src={publicUrl(img.storage_path)}
+                          src={thumbUrl(img.storage_path, 600)}
                           alt={`${artist.name} headshot`}
                           className="w-full h-full object-cover"
                           loading="lazy"
@@ -471,7 +471,7 @@ export function ArtistCard({ artist, onChange }: Props) {
                     <div key={img.id} className="relative group">
                       <div className="aspect-square border-2 border-foreground overflow-hidden">
                         <img
-                          src={publicUrl(img.storage_path)}
+                          src={thumbUrl(img.storage_path, 600)}
                           alt={`${artist.name} variant`}
                           className="w-full h-full object-cover"
                           loading="lazy"
