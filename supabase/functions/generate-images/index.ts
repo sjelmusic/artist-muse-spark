@@ -75,17 +75,9 @@ async function uploadImage(artistId: string, dataUrl: string, label: string) {
   return path;
 }
 
-async function fetchAsDataUrl(publicUrl: string): Promise<string> {
-  const r = await fetch(publicUrl);
-  const buf = new Uint8Array(await r.arrayBuffer());
-  const mime = r.headers.get("content-type") || "image/png";
-  let binary = "";
-  for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
-  return `data:${mime};base64,${btoa(binary)}`;
-}
-
-// Build the pool of reference images for an artist: the chosen reference + any liked images.
-// De-duplicates and returns their data URLs, ready to be randomly sampled per generation.
+// Build the pool of reference images for an artist: the chosen reference + a few liked images.
+// Returns PUBLIC URLs (not base64) — the AI gateway accepts https URLs directly, which keeps
+// the edge function's memory footprint tiny. Capped to avoid unbounded growth.
 async function buildReferencePool(
   artistId: string,
   chosenReferenceId: string | null
@@ -105,11 +97,14 @@ async function buildReferencePool(
     }
   }
 
+  // Cap liked images to the 4 most recent — keeps memory + payload sane.
   const { data: liked } = await supabase
     .from("generated_images")
     .select("id, storage_path")
     .eq("artist_id", artistId)
-    .eq("liked", true);
+    .eq("liked", true)
+    .order("created_at", { ascending: false })
+    .limit(4);
   for (const row of liked || []) {
     if (!ids.has(row.id)) {
       ids.add(row.id);
@@ -117,13 +112,10 @@ async function buildReferencePool(
     }
   }
 
-  const urls = await Promise.all(
-    rows.map(async (r) => {
-      const { data: pub } = supabase.storage.from("artist-images").getPublicUrl(r.storage_path);
-      return await fetchAsDataUrl(pub.publicUrl);
-    })
-  );
-  return urls;
+  return rows.map((r) => {
+    const { data: pub } = supabase.storage.from("artist-images").getPublicUrl(r.storage_path);
+    return pub.publicUrl;
+  });
 }
 
 Deno.serve(async (req) => {
