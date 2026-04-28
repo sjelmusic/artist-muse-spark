@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchImageBlob, thumbUrl } from "@/lib/storage";
+import { fetchImageBlob, publicUrl, thumbUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Heart, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, Download, Heart, Link2, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -188,6 +188,27 @@ export function ArtistCard({ artist, onChange }: Props) {
     } catch (e) {
       console.error(e);
       toast.error("download failed");
+    }
+  };
+
+  const copyLink = async (img: Image) => {
+    const url = publicUrl(img.storage_path);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("high-res link copied");
+    } catch {
+      // Fallback for older browsers / insecure contexts
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        toast.success("high-res link copied");
+      } catch {
+        toast.error("couldn't copy link");
+      }
+      document.body.removeChild(ta);
     }
   };
 
