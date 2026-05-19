@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BulkInputForm } from "@/components/BulkInputForm";
 import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
 import { Button } from "@/components/ui/button";
-import { Check, Download, Heart, HelpCircle, Pencil, Plus, Sheet, Trash2, Wand2, X } from "lucide-react";
+import { Check, CheckCheck, Download, HelpCircle, Pencil, Plus, Sheet, ThumbsDown, ThumbsUp, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { fetchImageBlob } from "@/lib/storage";
 import JSZip from "jszip";
@@ -193,7 +193,7 @@ const Index = () => {
                   <li>paste a lineup (or upload your own face) → 4 headshots get generated.</li>
                   <li>pick one as your reference → 6 styled variants are auto-generated.</li>
                   <li>add 10 more in any flavor: <b>wild</b>, <b>cinematic</b>, <b>aesthetic</b>, or <b>plain</b> (no person, just vibe).</li>
-                  <li>like your favorites → they join the reference pool for future generations.</li>
+                  <li>approve your favorites → they join the reference pool for future generations.</li>
                   <li>zip the lot at 3000×3000 when you're happy.</li>
                 </ol>
               </div>
@@ -202,7 +202,9 @@ const Index = () => {
                 <ul className="space-y-1.5 text-muted-foreground leading-relaxed">
                   <li className="flex items-center gap-2"><Wand2 className="w-3.5 h-3.5 shrink-0" /> <b>use this</b> — picks a headshot as the reference for variants.</li>
                   <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 shrink-0" /> the currently chosen reference.</li>
-                  <li className="flex items-center gap-2"><Heart className="w-3.5 h-3.5 shrink-0" /> <b>like</b> — adds the image to the reference pool, randomly sampled in future prompts.</li>
+                  <li className="flex items-center gap-2"><ThumbsUp className="w-3.5 h-3.5 shrink-0" /> <b>approve</b> — adds the image to the reference pool, randomly sampled in future prompts.</li>
+                  <li className="flex items-center gap-2"><ThumbsDown className="w-3.5 h-3.5 shrink-0" /> <b>disapprove</b> — dims the image, excludes it from exports & future prompts (kept around in case you change your mind).</li>
+                  <li className="flex items-center gap-2"><CheckCheck className="w-3.5 h-3.5 shrink-0" /> <b>used</b> — tag images you've already used for a cover so they don't get reused.</li>
                   <li className="flex items-center gap-2"><Download className="w-3.5 h-3.5 shrink-0" /> <b>download</b> — single image (per tile) or zip (per artist / whole lineup), all at 3000×3000.</li>
                   <li className="flex items-center gap-2"><Plus className="w-3.5 h-3.5 shrink-0" /> <b>+ 10 …</b> — generates 10 more variants in that flavor.</li>
                   <li className="flex items-center gap-2"><Pencil className="w-3.5 h-3.5 shrink-0" /> <b>keywords</b> — click them under the artist name to edit. randomly woven into prompts (sometimes 0, sometimes 1–3) to anchor the vibe.</li>
