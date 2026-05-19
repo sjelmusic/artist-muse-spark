@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkInputForm } from "@/components/BulkInputForm";
 import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
 import { Button } from "@/components/ui/button";
-import { Check, Download, Heart, HelpCircle, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, Download, Heart, HelpCircle, Pencil, Plus, Sheet, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { fetchImageBlob } from "@/lib/storage";
 import JSZip from "jszip";
@@ -22,6 +22,32 @@ const Index = () => {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [zipping, setZipping] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [sheetUrl, setSheetUrl] = useState<string | null>(null);
+  const syncTimer = useRef<number | null>(null);
+
+  const runSync = async (opts: { silent?: boolean } = {}) => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sheet-sync");
+      if (error) throw error;
+      if (data?.url) setSheetUrl(data.url);
+      if (!opts.silent) {
+        if (data?.created) toast.success("created a fresh google sheet for you");
+        else toast.success(`synced ${data?.rows ?? 0} rows to your sheet`);
+      }
+    } catch (e: any) {
+      if (!opts.silent) toast.error(e.message || "sheet sync failed");
+      console.error("sheet-sync", e);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const scheduleSync = () => {
+    if (syncTimer.current) window.clearTimeout(syncTimer.current);
+    syncTimer.current = window.setTimeout(() => runSync({ silent: true }), 2500);
+  };
 
   const load = async () => {
     const { data } = await supabase
@@ -33,12 +59,29 @@ const Index = () => {
 
   useEffect(() => {
     load();
+    // load saved sheet url
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "google_sheet")
+      .maybeSingle()
+      .then(({ data }) => {
+        const url = (data?.value as any)?.url;
+        if (url) setSheetUrl(url);
+      });
     const ch = supabase
       .channel("artists-list")
-      .on("postgres_changes", { event: "*", schema: "public", table: "artists" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "artists" }, () => {
+        load();
+        scheduleSync();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "generated_images" }, () => {
+        scheduleSync();
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
+      if (syncTimer.current) window.clearTimeout(syncTimer.current);
     };
   }, []);
 
@@ -181,6 +224,27 @@ const Index = () => {
               <span className="text-xs uppercase tracking-widest text-muted-foreground">
                 {artists.length} artist{artists.length === 1 ? "" : "s"}
               </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={syncing}
+                onClick={() => runSync()}
+                className="border-2 border-foreground hover:bg-foreground hover:text-background"
+                title={sheetUrl ?? "creates a google sheet on first sync"}
+              >
+                <Sheet className="w-4 h-4 mr-1" />
+                {syncing ? "syncing…" : sheetUrl ? "sync sheet" : "create sheet"}
+              </Button>
+              {sheetUrl && (
+                <a
+                  href={sheetUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] uppercase tracking-widest font-bold underline underline-offset-4"
+                >
+                  open sheet
+                </a>
+              )}
               {artists.length > 0 && (
                 <Button
                   size="sm"
