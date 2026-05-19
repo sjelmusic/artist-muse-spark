@@ -35,6 +35,7 @@ export function RapidReview({ open, onClose }: Props) {
         .select("id, artist_id, storage_path, kind, song")
         .eq("status", "new")
         .eq("is_reference", false)
+        .eq("kind", "variant")
         .order("created_at", { ascending: true })
         .limit(500);
       const artistIds = Array.from(new Set((imgs ?? []).map((i: any) => i.artist_id)));
@@ -46,8 +47,9 @@ export function RapidReview({ open, onClose }: Props) {
       const rows: Row[] = (imgs ?? [])
         .filter((i: any) => {
           const a = aMap.get(i.artist_id) as any;
-          // skip the chosen reference headshot
-          return a && a.reference_image_id !== i.id;
+          // only artists that already have a chosen reference,
+          // and skip the reference headshot itself
+          return a && a.reference_image_id && a.reference_image_id !== i.id;
         })
         .map((i: any) => {
           const a = aMap.get(i.artist_id) as any;
