@@ -1,0 +1,1 @@
+ALTER TABLE public.generated_images ADD COLUMN IF NOT EXISTS used boolean NOT NULL DEFAULT false;

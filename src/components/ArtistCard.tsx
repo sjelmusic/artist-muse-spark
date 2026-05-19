@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchImageBlob, publicUrl, thumbUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Heart, Link2, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, CheckCheck, Download, Heart, Link2, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -65,6 +65,7 @@ type Image = {
   song: string | null;
   is_reference: boolean;
   liked: boolean;
+  used: boolean;
 };
 
 interface Props {
@@ -176,6 +177,21 @@ export function ArtistCard({ artist, onChange }: Props) {
       // revert
       setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: !next } : i)));
       toast.error("couldn't save like");
+    }
+  };
+
+  const toggleUsed = async (img: Image) => {
+    const next = !img.used;
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, used: next } : i)));
+    const { error } = await supabase
+      .from("generated_images")
+      .update({ used: next })
+      .eq("id", img.id);
+    if (error) {
+      setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, used: !next } : i)));
+      toast.error("couldn't tag image");
+    } else {
+      toast.success(next ? "tagged as used" : "untagged");
     }
   };
 
@@ -354,7 +370,7 @@ export function ArtistCard({ artist, onChange }: Props) {
               </span>
             )}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {headshots.length === 0
               ? Array.from({ length: 4 }).map((_, i) => (
                   <div
@@ -372,12 +388,17 @@ export function ArtistCard({ artist, onChange }: Props) {
                         }`}
                       >
                         <img
-                          src={thumbUrl(img.storage_path, 600)}
+                          src={thumbUrl(img.storage_path, 400)}
                           alt={`${artist.name} headshot`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover transition-all ${img.used ? "opacity-40 grayscale" : ""}`}
                           loading="lazy"
                         />
                       </div>
+                      {img.used && (
+                        <div className="absolute bottom-1 left-1 bg-foreground text-background px-1.5 py-0.5 text-[9px] uppercase tracking-widest font-bold border border-foreground pointer-events-none">
+                          used
+                        </div>
+                      )}
                       {!artist.reference_image_id && (
                         <button
                           disabled={busy}
@@ -406,6 +427,17 @@ export function ArtistCard({ artist, onChange }: Props) {
                             title={img.liked ? "liked — used as reference" : "like"}
                           >
                             <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
+                          </button>
+                          <button
+                            onClick={() => toggleUsed(img)}
+                            className={`border-2 border-foreground p-1 transition-all ${
+                              img.used
+                                ? "bg-foreground text-background opacity-100"
+                                : "bg-background opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background"
+                            }`}
+                            title={img.used ? "tagged as used — click to untag" : "mark as used"}
+                          >
+                            <CheckCheck className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => downloadOne(img)}
@@ -487,7 +519,7 @@ export function ArtistCard({ artist, onChange }: Props) {
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
               {variants.length === 0 && isLoading
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <div
@@ -499,12 +531,17 @@ export function ArtistCard({ artist, onChange }: Props) {
                     <div key={img.id} className="relative group">
                       <div className="aspect-square border-2 border-foreground overflow-hidden">
                         <img
-                          src={thumbUrl(img.storage_path, 600)}
+                          src={thumbUrl(img.storage_path, 400)}
                           alt={`${artist.name} variant`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover transition-all ${img.used ? "opacity-40 grayscale" : ""}`}
                           loading="lazy"
                         />
                       </div>
+                      {img.used && (
+                        <div className="absolute bottom-1 left-1 bg-foreground text-background px-1.5 py-0.5 text-[9px] uppercase tracking-widest font-bold border border-foreground pointer-events-none z-10">
+                          used
+                        </div>
+                      )}
                       {img.song && (
                         <div className="absolute bottom-2 left-2 right-2 bg-background/90 border border-foreground px-2 py-1 text-[10px] uppercase tracking-wider truncate">
                           {img.song}
@@ -521,6 +558,17 @@ export function ArtistCard({ artist, onChange }: Props) {
                           title={img.liked ? "liked — used as reference" : "like"}
                         >
                           <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
+                        </button>
+                        <button
+                          onClick={() => toggleUsed(img)}
+                          className={`border-2 border-foreground p-1 transition-all ${
+                            img.used
+                              ? "bg-foreground text-background opacity-100"
+                              : "bg-background opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background"
+                          }`}
+                          title={img.used ? "tagged as used — click to untag" : "mark as used"}
+                        >
+                          <CheckCheck className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => downloadOne(img)}
