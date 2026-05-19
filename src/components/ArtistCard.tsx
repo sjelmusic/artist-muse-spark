@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchImageBlob, publicUrl, thumbUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, CheckCheck, Download, Heart, Link2, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, CheckCheck, Download, Link2, Loader2, Pencil, Plus, ThumbsDown, ThumbsUp, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -64,8 +64,7 @@ type Image = {
   kind: string;
   song: string | null;
   is_reference: boolean;
-  liked: boolean;
-  used: boolean;
+  status: "new" | "approved" | "disapproved" | "used" | string;
 };
 
 interface Props {
@@ -166,32 +165,17 @@ export function ArtistCard({ artist, onChange }: Props) {
     void supabase.storage.from("artist-images").remove([img.storage_path]);
   };
 
-  const toggleLike = async (img: Image) => {
-    const next = !img.liked;
-    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: next } : i)));
+  const setStatus = async (img: Image, target: Image["status"]) => {
+    // Toggle: clicking the current status returns it to 'new'.
+    const next = img.status === target ? "new" : target;
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, status: next } : i)));
     const { error } = await supabase
       .from("generated_images")
-      .update({ liked: next })
+      .update({ status: next, liked: next === "approved", used: next === "used" })
       .eq("id", img.id);
     if (error) {
-      // revert
-      setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: !next } : i)));
-      toast.error("couldn't save like");
-    }
-  };
-
-  const toggleUsed = async (img: Image) => {
-    const next = !img.used;
-    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, used: next } : i)));
-    const { error } = await supabase
-      .from("generated_images")
-      .update({ used: next })
-      .eq("id", img.id);
-    if (error) {
-      setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, used: !next } : i)));
-      toast.error("couldn't tag image");
-    } else {
-      toast.success(next ? "tagged as used" : "untagged");
+      setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, status: img.status } : i)));
+      toast.error("couldn't update status");
     }
   };
 
