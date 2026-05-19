@@ -55,6 +55,7 @@ export type Database = {
           prompt: string | null
           song: string | null
           storage_path: string
+          used: boolean
         }
         Insert: {
           artist_id: string
@@ -66,6 +67,7 @@ export type Database = {
           prompt?: string | null
           song?: string | null
           storage_path: string
+          used?: boolean
         }
         Update: {
           artist_id?: string
@@ -77,6 +79,7 @@ export type Database = {
           prompt?: string | null
           song?: string | null
           storage_path?: string
+          used?: boolean
         }
         Relationships: [
           {
