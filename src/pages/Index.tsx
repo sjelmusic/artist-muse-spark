@@ -178,21 +178,23 @@ const Index = () => {
               aesthetic engine<span className="text-accent">.</span>
             </h1>
           </div>
-          <button
-            onClick={() => setShowHelp((s) => !s)}
-            className="flex items-center gap-1.5 border-2 border-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            {showHelp ? "hide" : "how it works"}
-          </button>
-          <button
-            onClick={() => setRapidOpen(true)}
-            className="ml-2 flex items-center gap-1.5 border-2 border-foreground bg-accent text-accent-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
-            title="tinder-style approval (← reject · → approve · ↑ used · ↓ skip)"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            rapid review
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRapidOpen(true)}
+              className="flex items-center gap-1.5 border-2 border-foreground bg-accent text-accent-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
+              title="tinder-style approval (← reject · → approve · ↑ used · ↓ skip)"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              rapid review
+            </button>
+            <button
+              onClick={() => setShowHelp((s) => !s)}
+              className="flex items-center gap-1.5 border-2 border-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              {showHelp ? "hide" : "how it works"}
+            </button>
+          </div>
         </div>
         {showHelp && (
           <div className="border-t-2 border-foreground bg-secondary">
