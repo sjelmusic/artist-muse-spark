@@ -97,12 +97,12 @@ async function buildReferencePool(
     }
   }
 
-  // Cap liked images to the 4 most recent — keeps memory + payload sane.
+  // Cap approved images to the 4 most recent — keeps memory + payload sane.
   const { data: liked } = await supabase
     .from("generated_images")
     .select("id, storage_path")
     .eq("artist_id", artistId)
-    .eq("liked", true)
+    .eq("status", "approved")
     .order("created_at", { ascending: false })
     .limit(4);
   for (const row of liked || []) {
