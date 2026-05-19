@@ -72,6 +72,7 @@ export type Database = {
           liked: boolean
           prompt: string | null
           song: string | null
+          status: string
           storage_path: string
           used: boolean
         }
@@ -84,6 +85,7 @@ export type Database = {
           liked?: boolean
           prompt?: string | null
           song?: string | null
+          status?: string
           storage_path: string
           used?: boolean
         }
@@ -96,6 +98,7 @@ export type Database = {
           liked?: boolean
           prompt?: string | null
           song?: string | null
+          status?: string
           storage_path?: string
           used?: boolean
         }
