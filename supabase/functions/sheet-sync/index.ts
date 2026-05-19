@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     // 2. Pull everything from DB
     const [{ data: artists }, { data: images }] = await Promise.all([
       supabase.from('artists').select('id,name,reference_image_id,songs,status,created_at'),
-      supabase.from('generated_images').select('id,artist_id,storage_path,kind,song,is_reference,liked,used,created_at').order('created_at', { ascending: true }),
+      supabase.from('generated_images').select('id,artist_id,storage_path,kind,song,is_reference,status,created_at').order('created_at', { ascending: true }),
     ])
 
     const artistMap = new Map((artists ?? []).map((a: any) => [a.id, a]))
@@ -84,11 +84,9 @@ Deno.serve(async (req) => {
     for (const img of images ?? []) {
       const artist = artistMap.get(img.artist_id) as any
       if (!artist) continue
-      let status = 'new'
-      if (img.used) status = 'used'
-      else if (artist.reference_image_id === img.id) status = 'reference'
-      else if (img.is_reference) status = 'uploaded-reference'
-      else if (img.liked) status = 'liked'
+      let status = img.status ?? 'new'
+      if (artist.reference_image_id === img.id) status = 'reference'
+      else if (img.is_reference && status === 'new') status = 'uploaded-reference'
       rows.push([
         artist.name,
         publicUrl(img.storage_path),
