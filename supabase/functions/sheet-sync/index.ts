@@ -75,11 +75,47 @@ Deno.serve(async (req) => {
     ])
 
     const artistMap = new Map((artists ?? []).map((a: any) => [a.id, a]))
+    const imageMap = new Map((images ?? []).map((i: any) => [i.id, i]))
     const supaUrl = Deno.env.get('SUPABASE_URL')!
     const publicUrl = (path: string) =>
       `${supaUrl}/storage/v1/object/public/artist-images/${path}`
 
-    const header = ['artist', 'image_link', 'status', 'kind', 'song', 'created_at', 'image_id']
+    // ---- 2a. Pull feedback edits from the sheet first (sheet → DB) ----
+    // Column layout: A artist | B image_link | C status | D feedback | E kind |
+    //                F song | G created_at | H image_id
+    const ALLOWED = new Set(['new', 'approved', 'disapproved', 'used'])
+    let pulled = 0
+    try {
+      const existing = await gwFetch(
+        `${GATEWAY}/spreadsheets/${spreadsheetId}/values/Images!A2:H200000`,
+      )
+      const existingRows: string[][] = existing?.values ?? []
+      for (const row of existingRows) {
+        const feedback = (row[3] ?? '').toString().trim().toLowerCase()
+        const imageId = (row[7] ?? '').toString().trim()
+        if (!feedback || !imageId) continue
+        if (!ALLOWED.has(feedback)) continue
+        const img = imageMap.get(imageId) as any
+        if (!img) continue
+        if (img.status === feedback) continue
+        const { error } = await supabase
+          .from('generated_images')
+          .update({
+            status: feedback,
+            liked: feedback === 'approved',
+            used: feedback === 'used',
+          })
+          .eq('id', imageId)
+        if (!error) {
+          img.status = feedback
+          pulled++
+        }
+      }
+    } catch (e) {
+      console.warn('sheet-sync: could not read sheet for feedback pull', e)
+    }
+
+    const header = ['artist', 'image_link', 'status', 'feedback', 'kind', 'song', 'created_at', 'image_id']
     const rows: any[][] = [header]
     for (const img of images ?? []) {
       const artist = artistMap.get(img.artist_id) as any
@@ -91,6 +127,7 @@ Deno.serve(async (req) => {
         artist.name,
         publicUrl(img.storage_path),
         status,
+        '', // feedback column — left blank; user fills it in to push status back
         img.kind ?? '',
         img.song ?? '',
         img.created_at,
@@ -115,6 +152,7 @@ Deno.serve(async (req) => {
         spreadsheet_id: spreadsheetId,
         url: spreadsheetUrl,
         rows: rows.length - 1,
+        feedback_applied: pulled,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
