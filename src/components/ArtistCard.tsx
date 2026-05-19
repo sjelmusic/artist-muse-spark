@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchImageBlob, publicUrl, thumbUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Download, Heart, Link2, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Check, CheckCheck, Download, Heart, Link2, Loader2, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -65,6 +65,7 @@ type Image = {
   song: string | null;
   is_reference: boolean;
   liked: boolean;
+  used: boolean;
 };
 
 interface Props {
@@ -176,6 +177,21 @@ export function ArtistCard({ artist, onChange }: Props) {
       // revert
       setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, liked: !next } : i)));
       toast.error("couldn't save like");
+    }
+  };
+
+  const toggleUsed = async (img: Image) => {
+    const next = !img.used;
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, used: next } : i)));
+    const { error } = await supabase
+      .from("generated_images")
+      .update({ used: next })
+      .eq("id", img.id);
+    if (error) {
+      setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, used: !next } : i)));
+      toast.error("couldn't tag image");
+    } else {
+      toast.success(next ? "tagged as used" : "untagged");
     }
   };
 
