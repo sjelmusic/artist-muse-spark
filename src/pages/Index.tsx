@@ -26,6 +26,7 @@ const Index = () => {
   const [syncing, setSyncing] = useState(false);
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
   const [rapidOpen, setRapidOpen] = useState(false);
+  const [needsRefOnly, setNeedsRefOnly] = useState(false);
   const syncTimer = useRef<number | null>(null);
 
   const runSync = async (opts: { silent?: boolean } = {}) => {
@@ -165,6 +166,11 @@ const Index = () => {
     }
   };
 
+  const visibleArtists = needsRefOnly
+    ? artists.filter((a) => !a.reference_image_id)
+    : artists;
+  const needsRefCount = artists.filter((a) => !a.reference_image_id).length;
+
   return (
     <div className="min-h-screen bg-background grain">
       {/* Top bar */}
@@ -238,6 +244,17 @@ const Index = () => {
               <span className="text-xs uppercase tracking-widest text-muted-foreground">
                 {artists.length} artist{artists.length === 1 ? "" : "s"}
               </span>
+              <button
+                onClick={() => setNeedsRefOnly((v) => !v)}
+                className={`text-[10px] uppercase tracking-widest font-bold border-2 border-foreground px-2 py-1 transition-colors ${
+                  needsRefOnly
+                    ? "bg-foreground text-background"
+                    : "hover:bg-foreground hover:text-background"
+                }`}
+                title="show only artists missing a chosen reference headshot"
+              >
+                needs reference · {needsRefCount}
+              </button>
               <Button
                 size="sm"
                 variant="outline"
@@ -283,9 +300,18 @@ const Index = () => {
                 paste some artists above to start the engine.
               </p>
             </div>
+          ) : visibleArtists.length === 0 ? (
+            <div className="border-2 border-dashed border-foreground/40 p-12 text-center">
+              <p className="font-serif-display text-2xl text-muted-foreground">
+                every artist has a reference picked.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                turn off the filter to see the full lineup.
+              </p>
+            </div>
           ) : (
             <div className="space-y-8">
-              {artists.map((a) => (
+              {visibleArtists.map((a) => (
                 <ArtistCard key={a.id} artist={a} onChange={load} />
               ))}
             </div>
