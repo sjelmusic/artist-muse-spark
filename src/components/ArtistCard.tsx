@@ -127,6 +127,57 @@ export function ArtistCard({ artist, onChange }: Props) {
   const headshots = images.filter((i) => i.kind === "headshot");
   const variants = images.filter((i) => i.kind === "variant");
 
+  const StatusButtons = ({ img, alwaysVisible }: { img: Image; alwaysVisible?: boolean }) => {
+    const baseHidden = alwaysVisible ? "" : "opacity-0 group-hover:opacity-100";
+    return (
+      <>
+        <button
+          onClick={() => setStatus(img, "approved")}
+          className={`border-2 border-foreground p-1 transition-all ${
+            img.status === "approved"
+              ? "bg-accent text-accent-foreground opacity-100"
+              : `bg-background ${baseHidden} hover:bg-accent hover:text-accent-foreground`
+          }`}
+          title={img.status === "approved" ? "approved — feeds future prompts. click to unset" : "approve"}
+        >
+          <ThumbsUp className={`w-3 h-3 ${img.status === "approved" ? "fill-current" : ""}`} />
+        </button>
+        <button
+          onClick={() => setStatus(img, "disapproved")}
+          className={`border-2 border-foreground p-1 transition-all ${
+            img.status === "disapproved"
+              ? "bg-destructive text-destructive-foreground opacity-100"
+              : `bg-background ${baseHidden} hover:bg-destructive hover:text-destructive-foreground`
+          }`}
+          title={img.status === "disapproved" ? "disapproved. click to unset" : "disapprove"}
+        >
+          <ThumbsDown className={`w-3 h-3 ${img.status === "disapproved" ? "fill-current" : ""}`} />
+        </button>
+        <button
+          onClick={() => setStatus(img, "used")}
+          className={`border-2 border-foreground p-1 transition-all ${
+            img.status === "used"
+              ? "bg-foreground text-background opacity-100"
+              : `bg-background ${baseHidden} hover:bg-foreground hover:text-background`
+          }`}
+          title={img.status === "used" ? "tagged as used — click to untag" : "mark as used"}
+        >
+          <CheckCheck className="w-3 h-3" />
+        </button>
+      </>
+    );
+  };
+
+  const statusBadgeFor = (status: string) => {
+    if (status === "used") return { label: "used", className: "bg-foreground text-background" };
+    if (status === "disapproved") return { label: "nope", className: "bg-destructive text-destructive-foreground" };
+    if (status === "approved") return { label: "approved", className: "bg-accent text-accent-foreground" };
+    return null;
+  };
+
+  const dimmedClass = (status: string) =>
+    status === "used" || status === "disapproved" ? "opacity-40 grayscale" : "";
+
   const chooseReference = async (img: Image) => {
     setBusy(true);
     try {
@@ -374,15 +425,18 @@ export function ArtistCard({ artist, onChange }: Props) {
                         <img
                           src={thumbUrl(img.storage_path, 400)}
                           alt={`${artist.name} headshot`}
-                          className={`w-full h-full object-cover transition-all ${img.used ? "opacity-40 grayscale" : ""}`}
+                          className={`w-full h-full object-cover transition-all ${dimmedClass(img.status)}`}
                           loading="lazy"
                         />
                       </div>
-                      {img.used && (
-                        <div className="absolute bottom-1 left-1 bg-foreground text-background px-1.5 py-0.5 text-[9px] uppercase tracking-widest font-bold border border-foreground pointer-events-none">
-                          used
-                        </div>
-                      )}
+                      {(() => {
+                        const badge = statusBadgeFor(img.status);
+                        return badge ? (
+                          <div className={`absolute bottom-1 left-1 ${badge.className} px-1.5 py-0.5 text-[9px] uppercase tracking-widest font-bold border border-foreground pointer-events-none z-10`}>
+                            {badge.label}
+                          </div>
+                        ) : null;
+                      })()}
                       {!artist.reference_image_id && (
                         <button
                           disabled={busy}
@@ -401,28 +455,7 @@ export function ArtistCard({ artist, onChange }: Props) {
                       )}
                       {!chosen && (
                         <div className="absolute top-2 right-2 flex gap-1 z-10">
-                          <button
-                            onClick={() => toggleLike(img)}
-                            className={`border-2 border-foreground p-1 transition-all ${
-                              img.liked
-                                ? "bg-accent text-accent-foreground opacity-100"
-                                : "bg-background opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground"
-                            }`}
-                            title={img.liked ? "liked — used as reference" : "like"}
-                          >
-                            <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
-                          </button>
-                          <button
-                            onClick={() => toggleUsed(img)}
-                            className={`border-2 border-foreground p-1 transition-all ${
-                              img.used
-                                ? "bg-foreground text-background opacity-100"
-                                : "bg-background opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background"
-                            }`}
-                            title={img.used ? "tagged as used — click to untag" : "mark as used"}
-                          >
-                            <CheckCheck className="w-3 h-3" />
-                          </button>
+                          <StatusButtons img={img} />
                           <button
                             onClick={() => downloadOne(img)}
                             className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background transition-all"
@@ -517,43 +550,25 @@ export function ArtistCard({ artist, onChange }: Props) {
                         <img
                           src={thumbUrl(img.storage_path, 400)}
                           alt={`${artist.name} variant`}
-                          className={`w-full h-full object-cover transition-all ${img.used ? "opacity-40 grayscale" : ""}`}
+                          className={`w-full h-full object-cover transition-all ${dimmedClass(img.status)}`}
                           loading="lazy"
                         />
                       </div>
-                      {img.used && (
-                        <div className="absolute bottom-1 left-1 bg-foreground text-background px-1.5 py-0.5 text-[9px] uppercase tracking-widest font-bold border border-foreground pointer-events-none z-10">
-                          used
-                        </div>
-                      )}
+                      {(() => {
+                        const badge = statusBadgeFor(img.status);
+                        return badge ? (
+                          <div className={`absolute bottom-1 left-1 ${badge.className} px-1.5 py-0.5 text-[9px] uppercase tracking-widest font-bold border border-foreground pointer-events-none z-10`}>
+                            {badge.label}
+                          </div>
+                        ) : null;
+                      })()}
                       {img.song && (
                         <div className="absolute bottom-2 left-2 right-2 bg-background/90 border border-foreground px-2 py-1 text-[10px] uppercase tracking-wider truncate">
                           {img.song}
                         </div>
                       )}
                       <div className="absolute top-2 right-2 flex gap-1">
-                        <button
-                          onClick={() => toggleLike(img)}
-                          className={`border-2 border-foreground p-1 transition-all ${
-                            img.liked
-                              ? "bg-accent text-accent-foreground opacity-100"
-                              : "bg-background opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground"
-                          }`}
-                          title={img.liked ? "liked — used as reference" : "like"}
-                        >
-                          <Heart className={`w-3 h-3 ${img.liked ? "fill-current" : ""}`} />
-                        </button>
-                        <button
-                          onClick={() => toggleUsed(img)}
-                          className={`border-2 border-foreground p-1 transition-all ${
-                            img.used
-                              ? "bg-foreground text-background opacity-100"
-                              : "bg-background opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background"
-                          }`}
-                          title={img.used ? "tagged as used — click to untag" : "mark as used"}
-                        >
-                          <CheckCheck className="w-3 h-3" />
-                        </button>
+                        <StatusButtons img={img} />
                         <button
                           onClick={() => downloadOne(img)}
                           className="bg-background border-2 border-foreground p-1 opacity-0 group-hover:opacity-100 hover:bg-foreground hover:text-background transition-all"
