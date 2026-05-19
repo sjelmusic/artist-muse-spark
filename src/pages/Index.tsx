@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { BulkInputForm } from "@/components/BulkInputForm";
 import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
 import { Button } from "@/components/ui/button";
-import { Check, CheckCheck, Download, HelpCircle, Pencil, Plus, Sheet, ThumbsDown, ThumbsUp, Trash2, Wand2, X } from "lucide-react";
+import { Check, CheckCheck, Download, HelpCircle, Pencil, Plus, Sheet, ThumbsDown, ThumbsUp, Trash2, Wand2, X, Zap } from "lucide-react";
+import { RapidReview } from "@/components/RapidReview";
 import { toast } from "sonner";
 import { fetchImageBlob } from "@/lib/storage";
 import JSZip from "jszip";
@@ -24,6 +25,7 @@ const Index = () => {
   const [showHelp, setShowHelp] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
+  const [rapidOpen, setRapidOpen] = useState(false);
   const syncTimer = useRef<number | null>(null);
 
   const runSync = async (opts: { silent?: boolean } = {}) => {
@@ -183,6 +185,14 @@ const Index = () => {
             <HelpCircle className="w-3.5 h-3.5" />
             {showHelp ? "hide" : "how it works"}
           </button>
+          <button
+            onClick={() => setRapidOpen(true)}
+            className="ml-2 flex items-center gap-1.5 border-2 border-foreground bg-accent text-accent-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
+            title="tinder-style approval (← reject · → approve · ↑ used · ↓ skip)"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            rapid review
+          </button>
         </div>
         {showHelp && (
           <div className="border-t-2 border-foreground bg-secondary">
@@ -287,6 +297,7 @@ const Index = () => {
           <span>nano banana 2 · gemini 3.1 flash image</span>
         </div>
       </footer>
+      <RapidReview open={rapidOpen} onClose={() => setRapidOpen(false)} />
     </div>
   );
 };
