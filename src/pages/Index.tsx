@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkInputForm } from "@/components/BulkInputForm";
 import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
 import { Button } from "@/components/ui/button";
-import { Check, CheckCheck, Download, HelpCircle, Pencil, Plus, Sheet, ThumbsDown, ThumbsUp, Trash2, Wand2, X, Zap } from "lucide-react";
+import { Check, CheckCheck, Download, HelpCircle, Music, Pencil, Plus, Sheet, ThumbsDown, ThumbsUp, Trash2, Wand2, X, Zap } from "lucide-react";
 import { RapidReview } from "@/components/RapidReview";
 import { toast } from "sonner";
 import { fetchImageBlob } from "@/lib/storage";
@@ -185,6 +186,14 @@ const Index = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              to="/bulk-spotify"
+              className="flex items-center gap-1.5 border-2 border-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
+              title="bulk-import artists from spotify links"
+            >
+              <Music className="w-3.5 h-3.5" />
+              spotify bulk
+            </Link>
             <button
               onClick={() => setRapidOpen(true)}
               className="flex items-center gap-1.5 border-2 border-foreground bg-accent text-accent-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
