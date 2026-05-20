@@ -119,7 +119,7 @@ const BulkSpotify = () => {
                 >
                   <span className="shrink-0">{r.ok ? "✓" : "✗"}</span>
                   <span className="truncate">
-                    {r.ok ? r.name : `${r.input} — ${r.error}`}
+                    {r.ok ? r.name : `${r.input} — ${(r as Extract<Result, { ok: false }>).error}`}
                   </span>
                 </li>
               ))}
