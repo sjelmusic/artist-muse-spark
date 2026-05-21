@@ -65,6 +65,7 @@ type Image = {
   song: string | null;
   is_reference: boolean;
   status: "new" | "approved" | "disapproved" | "used" | string;
+  used: boolean;
 };
 
 interface Props {
