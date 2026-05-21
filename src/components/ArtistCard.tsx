@@ -65,6 +65,7 @@ type Image = {
   song: string | null;
   is_reference: boolean;
   status: "new" | "approved" | "disapproved" | "used" | string;
+  used: boolean;
 };
 
 interface Props {
@@ -528,7 +529,7 @@ export function ArtistCard({ artist, onChange }: Props) {
                           loading="lazy"
                         />
                       </div>
-                      {img.status === "used" && (
+                      {img.used && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                           <div className="bg-accent text-accent-foreground border-2 border-foreground p-2 shadow-brutal">
                             <Check className="w-6 h-6" strokeWidth={3} />
@@ -710,7 +711,7 @@ export function ArtistCard({ artist, onChange }: Props) {
                       >
                         {isSel && <Check className="w-3 h-3" />}
                       </button>
-                      {img.status === "used" && (
+                      {img.used && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                           <div className="bg-accent text-accent-foreground border-2 border-foreground p-2 shadow-brutal">
                             <Check className="w-6 h-6" strokeWidth={3} />
