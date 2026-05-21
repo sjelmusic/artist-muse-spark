@@ -70,8 +70,8 @@ Deno.serve(async (req) => {
 
     // 2. Pull everything from DB
     const [{ data: artists }, { data: images }] = await Promise.all([
-      supabase.from('artists').select('id,name,reference_image_id,songs,status,created_at'),
-      supabase.from('generated_images').select('id,artist_id,storage_path,kind,song,is_reference,status,created_at').order('created_at', { ascending: true }),
+      supabase.from('artists').select('id,name,reference_image_id,songs,status,created_at').range(0, 99999),
+      fetchAllImages(supabase),
     ])
 
     const artistMap = new Map((artists ?? []).map((a: any) => [a.id, a]))
