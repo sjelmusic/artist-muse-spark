@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
         // wider age range, since the model has been defaulting to young black
         // subjects too often. Keywords still get final say via songLine.
         const diversityPool = [
-          "a white woman in her 20s", "a white man in her 20s".replace("her", "his"),
+          "a white woman in her 20s", "a white man in his 20s",
           "a white woman in her 30s", "a white man in his 30s",
           "a white woman in her 40s", "a white man in his 40s",
           "a white woman in her 50s", "a white man in his 50s",
