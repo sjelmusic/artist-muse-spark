@@ -6,6 +6,7 @@ import { ArtistCard, resizeToSquare } from "@/components/ArtistCard";
 import { Button } from "@/components/ui/button";
 import { Check, CheckCheck, Download, HelpCircle, Music, Pencil, Plus, Sheet, ThumbsDown, ThumbsUp, Trash2, Wand2, X, Zap } from "lucide-react";
 import { RapidReview } from "@/components/RapidReview";
+import { MarkUsedDialog } from "@/components/MarkUsedDialog";
 import { toast } from "sonner";
 import { fetchImageBlob } from "@/lib/storage";
 import JSZip from "jszip";
@@ -27,6 +28,7 @@ const Index = () => {
   const [syncing, setSyncing] = useState(false);
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
   const [rapidOpen, setRapidOpen] = useState(false);
+  const [markUsedOpen, setMarkUsedOpen] = useState(false);
   const [needsRefOnly, setNeedsRefOnly] = useState(false);
   const syncTimer = useRef<number | null>(null);
 
@@ -203,6 +205,14 @@ const Index = () => {
               rapid review
             </button>
             <button
+              onClick={() => setMarkUsedOpen(true)}
+              className="flex items-center gap-1.5 border-2 border-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
+              title="bulk-mark images as already used (drops them from the sheet)"
+            >
+              <CheckCheck className="w-3.5 h-3.5" />
+              mark used
+            </button>
+            <button
               onClick={() => setShowHelp((s) => !s)}
               className="flex items-center gap-1.5 border-2 border-foreground px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-colors"
             >
@@ -335,6 +345,7 @@ const Index = () => {
         </div>
       </footer>
       <RapidReview open={rapidOpen} onClose={() => setRapidOpen(false)} />
+      <MarkUsedDialog open={markUsedOpen} onClose={() => setMarkUsedOpen(false)} />
     </div>
   );
 };
