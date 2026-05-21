@@ -137,15 +137,15 @@ Deno.serve(async (req) => {
     const header = ['artist', 'image_link', 'status', 'feedback', 'kind', 'song', 'created_at', 'image_id']
     const rows: any[][] = [header]
     for (const img of images ?? []) {
+      // Only include approved images that haven't been used
+      if (img.status !== 'approved') continue
+      if (img.used) continue
       const artist = artistMap.get(img.artist_id) as any
       if (!artist) continue
-      let status = img.status ?? 'new'
-      if (artist.reference_image_id === img.id) status = 'reference'
-      else if (img.is_reference && status === 'new') status = 'uploaded-reference'
       rows.push([
         artist.name,
         publicUrl(img.storage_path),
-        status,
+        img.status,
         '', // feedback column — left blank; user fills it in to push status back
         img.kind ?? '',
         img.song ?? '',
