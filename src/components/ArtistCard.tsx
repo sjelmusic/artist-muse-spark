@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchImageBlob, publicUrl, thumbUrl } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, CheckCheck, Download, Link2, Loader2, Pencil, Plus, ThumbsDown, ThumbsUp, Trash2, Wand2, X } from "lucide-react";
+import { Check, CheckCheck, Download, Link2, Loader2, Pencil, Plus, ThumbsDown, ThumbsUp, Trash2, Upload, Wand2, X } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -77,6 +77,8 @@ export function ArtistCard({ artist, onChange }: Props) {
   const [busy, setBusy] = useState(false);
   const [editingKeywords, setEditingKeywords] = useState(false);
   const [keywordDraft, setKeywordDraft] = useState(artist.songs.join(", "));
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!editingKeywords) setKeywordDraft(artist.songs.join(", "));
@@ -214,6 +216,44 @@ export function ArtistCard({ artist, onChange }: Props) {
     setImages((prev) => prev.filter((i) => i.id !== img.id));
     void supabase.from("generated_images").delete().eq("id", img.id);
     void supabase.storage.from("artist-images").remove([img.storage_path]);
+  };
+
+  const uploadReferences = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    let ok = 0;
+    let fail = 0;
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) { fail++; continue; }
+        if (file.size > 15 * 1024 * 1024) { fail++; continue; }
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${artist.id}/upload-headshot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("artist-images")
+          .upload(path, file, { contentType: file.type, upsert: false });
+        if (upErr) { fail++; continue; }
+        const { error: iErr } = await supabase
+          .from("generated_images")
+          .insert({
+            artist_id: artist.id,
+            storage_path: path,
+            kind: "headshot",
+            prompt: "user-uploaded reference",
+            is_reference: true,
+            status: artist.reference_image_id ? "approved" : "new",
+            liked: !!artist.reference_image_id,
+          });
+        if (iErr) { fail++; continue; }
+        ok++;
+      }
+      if (ok) toast.success(`added ${ok} reference${ok === 1 ? "" : "s"}`);
+      if (fail) toast.error(`${fail} file${fail === 1 ? "" : "s"} skipped`);
+      load();
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const setStatus = async (img: Image, target: Image["status"]) => {
@@ -399,11 +439,32 @@ export function ArtistCard({ artist, onChange }: Props) {
             <h4 className="text-xs uppercase tracking-[0.2em] font-bold">
               {artist.reference_image_id ? "01 — chosen reference" : "01 — pick your headshot"}
             </h4>
-            {isLoading && headshots.length === 0 && (
-              <span className="text-xs flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="w-3 h-3 animate-spin" /> generating
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {isLoading && headshots.length === 0 && (
+                <span className="text-xs flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" /> generating
+                </span>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="sr-only"
+                onChange={(e) => uploadReferences(e.target.files)}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-foreground hover:bg-foreground hover:text-background h-7 text-xs"
+                title="upload your own image(s) as reference — added to the reference pool"
+              >
+                {uploading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Upload className="w-3 h-3 mr-1" />}
+                upload reference
+              </Button>
+            </div>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {headshots.length === 0
