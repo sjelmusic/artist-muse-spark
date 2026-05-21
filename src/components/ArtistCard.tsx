@@ -270,6 +270,32 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
+  const bulkSetVariants = async (target: "approved" | "disapproved") => {
+    const targets = variants.filter((i) => i.status !== "used" && i.status !== target);
+    if (targets.length === 0) {
+      toast.info(`nothing to ${target === "approved" ? "approve" : "disapprove"}`);
+      return;
+    }
+    const ids = targets.map((i) => i.id);
+    setImages((prev) =>
+      prev.map((i) => (ids.includes(i.id) ? { ...i, status: target } : i))
+    );
+    const { error } = await supabase
+      .from("generated_images")
+      .update({
+        status: target,
+        liked: target === "approved",
+        used: false,
+      })
+      .in("id", ids);
+    if (error) {
+      toast.error("bulk update failed");
+      load();
+      return;
+    }
+    toast.success(`${target === "approved" ? "approved" : "disapproved"} ${ids.length}`);
+  };
+
   const downloadOne = async (img: Image) => {
     try {
       const blob = await fetchImageBlob(img.storage_path);
