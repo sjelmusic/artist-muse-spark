@@ -79,6 +79,16 @@ export function ArtistCard({ artist, onChange }: Props) {
   const [keywordDraft, setKeywordDraft] = useState(artist.songs.join(", "));
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!editingKeywords) setKeywordDraft(artist.songs.join(", "));
