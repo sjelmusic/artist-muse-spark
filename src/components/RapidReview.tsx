@@ -36,7 +36,7 @@ export function RapidReview({ open, onClose }: Props) {
         .eq("status", "new")
         .eq("is_reference", false)
         .eq("kind", "variant")
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(500);
       const artistIds = Array.from(new Set((imgs ?? []).map((i: any) => i.artist_id)));
       const { data: artists } = await supabase
