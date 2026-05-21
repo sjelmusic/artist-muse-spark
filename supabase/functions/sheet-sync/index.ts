@@ -30,6 +30,25 @@ async function gwFetch(url: string, init: RequestInit = {}) {
   return data
 }
 
+async function fetchAllImages(supabase: any) {
+  const pageSize = 1000
+  let from = 0
+  const all: any[] = []
+  while (true) {
+    const { data, error } = await supabase
+      .from('generated_images')
+      .select('id,artist_id,storage_path,kind,song,is_reference,status,created_at')
+      .order('created_at', { ascending: true })
+      .range(from, from + pageSize - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return { data: all }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
