@@ -177,7 +177,23 @@ Deno.serve(async (req) => {
         const songLine = sampled
           ? ` CRITICAL CREATIVE DIRECTION — these keywords define WHO this person is and must drive their look: ${sampled}. Let them shape ethnicity, age, styling, wardrobe, hair, energy, vibe and the world around them. Bring real human diversity — do not default to one type of person.`
           : "";
-        return `you are creating a real flash image for a cool person called ${artist.name}. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+        // Diversity pool — explicitly weighted to bring in MORE white people and a
+        // wider age range, since the model has been defaulting to young black
+        // subjects too often. Keywords still get final say via songLine.
+        const diversityPool = [
+          "a white woman in her 20s", "a white man in his 20s",
+          "a white woman in her 30s", "a white man in his 30s",
+          "a white woman in her 40s", "a white man in his 40s",
+          "a white woman in her 50s", "a white man in his 50s",
+          "a pale freckled redhead in their 20s", "a blonde scandinavian-looking person in their 30s",
+          "an olive-skinned mediterranean person in their 30s", "a latino person in their 20s",
+          "an east asian person in their 20s", "a south asian person in their 30s",
+          "a middle eastern person in their 30s", "a mixed-race person in their 20s",
+          "a black person in their 20s", "an older person in their 60s with grey hair",
+          "a teenager around 18", "a person in their late 40s with weathered character",
+        ];
+        const subject = diversityPool[Math.floor(Math.random() * diversityPool.length)];
+        return `you are creating a real flash image for a cool person called ${artist.name}. SUBJECT: ${subject} — actually depict them this way unless the keywords below clearly demand otherwise. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} IMPORTANT: bring real human diversity across age, ethnicity and body type — do NOT default to young black subjects. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
       };
       const job = (async () => {
         const tasks = Array.from({ length: 4 }, (_, i) =>
