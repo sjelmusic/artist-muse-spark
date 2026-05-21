@@ -588,6 +588,26 @@ export function ArtistCard({ artist, onChange }: Props) {
                 <Button
                   size="sm"
                   variant="outline"
+                  disabled={busy || variants.length === 0}
+                  onClick={() => bulkSetVariants("approved")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                  title="approve all variants"
+                >
+                  <ThumbsUp className="w-3 h-3 mr-1" /> approve all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || variants.length === 0}
+                  onClick={() => bulkSetVariants("disapproved")}
+                  className="border-2 border-foreground hover:bg-destructive hover:text-destructive-foreground h-7 text-xs"
+                  title="disapprove all variants"
+                >
+                  <ThumbsDown className="w-3 h-3 mr-1" /> reject all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   disabled={busy}
                   onClick={() => generateExtra("wild")}
                   className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
