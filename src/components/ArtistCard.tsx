@@ -280,13 +280,14 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
-  const bulkSetVariants = async (target: "approved" | "disapproved") => {
-    const targets = variants.filter((i) => i.status !== "used" && i.status !== target);
-    if (targets.length === 0) {
-      toast.info(`nothing to ${target === "approved" ? "approve" : "disapprove"}`);
+  const bulkSetSelected = async (target: "approved" | "disapproved") => {
+    const ids = variants
+      .filter((i) => selected.has(i.id) && i.status !== target)
+      .map((i) => i.id);
+    if (ids.length === 0) {
+      toast.info("nothing selected");
       return;
     }
-    const ids = targets.map((i) => i.id);
     setImages((prev) =>
       prev.map((i) => (ids.includes(i.id) ? { ...i, status: target } : i))
     );
@@ -303,6 +304,7 @@ export function ArtistCard({ artist, onChange }: Props) {
       load();
       return;
     }
+    setSelected(new Set());
     toast.success(`${target === "approved" ? "approved" : "disapproved"} ${ids.length}`);
   };
 
