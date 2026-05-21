@@ -270,6 +270,32 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
+  const bulkSetVariants = async (target: "approved" | "disapproved") => {
+    const targets = variants.filter((i) => i.status !== "used" && i.status !== target);
+    if (targets.length === 0) {
+      toast.info(`nothing to ${target === "approved" ? "approve" : "disapprove"}`);
+      return;
+    }
+    const ids = targets.map((i) => i.id);
+    setImages((prev) =>
+      prev.map((i) => (ids.includes(i.id) ? { ...i, status: target } : i))
+    );
+    const { error } = await supabase
+      .from("generated_images")
+      .update({
+        status: target,
+        liked: target === "approved",
+        used: false,
+      })
+      .in("id", ids);
+    if (error) {
+      toast.error("bulk update failed");
+      load();
+      return;
+    }
+    toast.success(`${target === "approved" ? "approved" : "disapproved"} ${ids.length}`);
+  };
+
   const downloadOne = async (img: Image) => {
     try {
       const blob = await fetchImageBlob(img.storage_path);
@@ -559,6 +585,26 @@ export function ArtistCard({ artist, onChange }: Props) {
                     <Loader2 className="w-3 h-3 animate-spin" /> generating
                   </span>
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || variants.length === 0}
+                  onClick={() => bulkSetVariants("approved")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                  title="approve all variants"
+                >
+                  <ThumbsUp className="w-3 h-3 mr-1" /> approve all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || variants.length === 0}
+                  onClick={() => bulkSetVariants("disapproved")}
+                  className="border-2 border-foreground hover:bg-destructive hover:text-destructive-foreground h-7 text-xs"
+                  title="disapprove all variants"
+                >
+                  <ThumbsDown className="w-3 h-3 mr-1" /> reject all
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
