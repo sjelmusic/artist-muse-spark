@@ -600,23 +600,40 @@ export function ArtistCard({ artist, onChange }: Props) {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={busy || variants.length === 0}
-                  onClick={() => bulkSetVariants("approved")}
-                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
-                  title="approve all variants"
+                  disabled={variants.length === 0}
+                  onClick={() => {
+                    if (selected.size === variants.length) setSelected(new Set());
+                    else setSelected(new Set(variants.map((v) => v.id)));
+                  }}
+                  className="border-2 border-foreground hover:bg-foreground hover:text-background h-7 text-xs"
+                  title="select / deselect all variants"
                 >
-                  <ThumbsUp className="w-3 h-3 mr-1" /> approve all
+                  {selected.size === variants.length && variants.length > 0
+                    ? "deselect all"
+                    : "select all"}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busy || variants.length === 0}
-                  onClick={() => bulkSetVariants("disapproved")}
-                  className="border-2 border-foreground hover:bg-destructive hover:text-destructive-foreground h-7 text-xs"
-                  title="disapprove all variants"
-                >
-                  <ThumbsDown className="w-3 h-3 mr-1" /> reject all
-                </Button>
+                {selected.size > 0 && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => bulkSetSelected("approved")}
+                      className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                    >
+                      <ThumbsUp className="w-3 h-3 mr-1" /> approve ({selected.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => bulkSetSelected("disapproved")}
+                      className="border-2 border-foreground hover:bg-destructive hover:text-destructive-foreground h-7 text-xs"
+                    >
+                      <ThumbsDown className="w-3 h-3 mr-1" /> reject ({selected.size})
+                    </Button>
+                  </>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
