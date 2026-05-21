@@ -79,6 +79,16 @@ export function ArtistCard({ artist, onChange }: Props) {
   const [keywordDraft, setKeywordDraft] = useState(artist.songs.join(", "));
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!editingKeywords) setKeywordDraft(artist.songs.join(", "));
@@ -270,13 +280,14 @@ export function ArtistCard({ artist, onChange }: Props) {
     }
   };
 
-  const bulkSetVariants = async (target: "approved" | "disapproved") => {
-    const targets = variants.filter((i) => i.status !== "used" && i.status !== target);
-    if (targets.length === 0) {
-      toast.info(`nothing to ${target === "approved" ? "approve" : "disapprove"}`);
+  const bulkSetSelected = async (target: "approved" | "disapproved") => {
+    const ids = variants
+      .filter((i) => selected.has(i.id) && i.status !== target)
+      .map((i) => i.id);
+    if (ids.length === 0) {
+      toast.info("nothing selected");
       return;
     }
-    const ids = targets.map((i) => i.id);
     setImages((prev) =>
       prev.map((i) => (ids.includes(i.id) ? { ...i, status: target } : i))
     );
@@ -293,6 +304,7 @@ export function ArtistCard({ artist, onChange }: Props) {
       load();
       return;
     }
+    setSelected(new Set());
     toast.success(`${target === "approved" ? "approved" : "disapproved"} ${ids.length}`);
   };
 
@@ -588,23 +600,40 @@ export function ArtistCard({ artist, onChange }: Props) {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={busy || variants.length === 0}
-                  onClick={() => bulkSetVariants("approved")}
-                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
-                  title="approve all variants"
+                  disabled={variants.length === 0}
+                  onClick={() => {
+                    if (selected.size === variants.length) setSelected(new Set());
+                    else setSelected(new Set(variants.map((v) => v.id)));
+                  }}
+                  className="border-2 border-foreground hover:bg-foreground hover:text-background h-7 text-xs"
+                  title="select / deselect all variants"
                 >
-                  <ThumbsUp className="w-3 h-3 mr-1" /> approve all
+                  {selected.size === variants.length && variants.length > 0
+                    ? "deselect all"
+                    : "select all"}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busy || variants.length === 0}
-                  onClick={() => bulkSetVariants("disapproved")}
-                  className="border-2 border-foreground hover:bg-destructive hover:text-destructive-foreground h-7 text-xs"
-                  title="disapprove all variants"
-                >
-                  <ThumbsDown className="w-3 h-3 mr-1" /> reject all
-                </Button>
+                {selected.size > 0 && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => bulkSetSelected("approved")}
+                      className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                    >
+                      <ThumbsUp className="w-3 h-3 mr-1" /> approve ({selected.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => bulkSetSelected("disapproved")}
+                      className="border-2 border-foreground hover:bg-destructive hover:text-destructive-foreground h-7 text-xs"
+                    >
+                      <ThumbsDown className="w-3 h-3 mr-1" /> reject ({selected.size})
+                    </Button>
+                  </>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -651,9 +680,11 @@ export function ArtistCard({ artist, onChange }: Props) {
                       className="aspect-square bg-secondary border-2 border-foreground grain animate-pulse"
                     />
                   ))
-                : variants.map((img) => (
+                : variants.map((img) => {
+                    const isSel = selected.has(img.id);
+                    return (
                     <div key={img.id} className="relative group">
-                      <div className="aspect-square border-2 border-foreground overflow-hidden">
+                      <div className={`aspect-square border-2 border-foreground overflow-hidden ${isSel ? "ring-4 ring-accent" : ""}`}>
                         <img
                           src={thumbUrl(img.storage_path, 400)}
                           alt={`${artist.name} variant`}
@@ -661,6 +692,17 @@ export function ArtistCard({ artist, onChange }: Props) {
                           loading="lazy"
                         />
                       </div>
+                      <button
+                        onClick={() => toggleSelected(img.id)}
+                        className={`absolute top-2 left-2 z-10 w-5 h-5 border-2 border-foreground flex items-center justify-center transition-all ${
+                          isSel
+                            ? "bg-accent text-accent-foreground opacity-100"
+                            : "bg-background opacity-0 group-hover:opacity-100"
+                        }`}
+                        title={isSel ? "deselect" : "select"}
+                      >
+                        {isSel && <Check className="w-3 h-3" />}
+                      </button>
                       {(() => {
                         const badge = statusBadgeFor(img.status);
                         return badge ? (
@@ -699,7 +741,8 @@ export function ArtistCard({ artist, onChange }: Props) {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
             </div>
           </section>
         )}
