@@ -37,7 +37,7 @@ async function fetchAllImages(supabase: any) {
   while (true) {
     const { data, error } = await supabase
       .from('generated_images')
-      .select('id,artist_id,storage_path,kind,song,is_reference,status,created_at')
+      .select('id,artist_id,storage_path,kind,song,is_reference,status,used,created_at')
       .order('created_at', { ascending: true })
       .range(from, from + pageSize - 1)
     if (error) throw error
@@ -127,6 +127,7 @@ Deno.serve(async (req) => {
           .eq('id', imageId)
         if (!error) {
           img.status = feedback
+          img.used = feedback === 'used'
           pulled++
         }
       }
