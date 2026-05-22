@@ -52,6 +52,10 @@ export function MarkUsedDialog({ open, onClose }: { open: boolean; onClose: () =
       );
       setText("");
       onClose();
+      // Force immediate sheet rewrite so used rows drop out right away.
+      supabase.functions.invoke("sheet-sync").catch((e) =>
+        console.error("sheet-sync after mark-used failed", e),
+      );
     } catch (e: any) {
       toast.error(e.message || "failed to mark used");
     } finally {
