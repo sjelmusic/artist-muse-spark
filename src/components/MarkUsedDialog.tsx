@@ -38,12 +38,14 @@ export function MarkUsedDialog({ open, onClose }: { open: boolean; onClose: () =
         const slice = paths.slice(i, i + CHUNK);
         const { data, error } = await supabase
           .from("generated_images")
-          .update({ used: true })
+          .update({ used: true, status: "used", liked: false })
           .in("storage_path", slice)
           .select("id");
         if (error) throw error;
         matched += data?.length ?? 0;
       }
+      const { error: syncError } = await supabase.functions.invoke("sheet-sync");
+      if (syncError) throw syncError;
       const missing = paths.length - matched;
       toast.success(
         `marked ${matched} image${matched === 1 ? "" : "s"} as used${
@@ -52,10 +54,6 @@ export function MarkUsedDialog({ open, onClose }: { open: boolean; onClose: () =
       );
       setText("");
       onClose();
-      // Force immediate sheet rewrite so used rows drop out right away.
-      supabase.functions.invoke("sheet-sync").catch((e) =>
-        console.error("sheet-sync after mark-used failed", e),
-      );
     } catch (e: any) {
       toast.error(e.message || "failed to mark used");
     } finally {
