@@ -139,12 +139,18 @@ Deno.serve(async (req) => {
       .single();
     if (aErr || !artist) throw new Error("Artist not found");
 
-    // Variation pools — flash lighting always stays
+    // Variation pools — flash lighting is the through-line but allowed to vary a bit
     const colors = ["warm red", "icy blue", "acid green", "buttery yellow", "dusty pink", "deep violet", "burnt orange", "cool grey", "cream", "electric teal"];
+    // Natural, candid, asymmetrical poses — never composed or symmetrical
+    const poses = ["caught mid-laugh, head tilted", "glancing back over one shoulder", "slouched and off-balance", "mid-step, weight on one leg", "looking away from camera, distracted", "leaning casually on something", "arms crossed loosely, relaxed", "turning as if just noticed the camera", "crouched low, candid", "hand running through hair", "half-turned, asymmetrical stance", "sitting sideways, unposed", "mid-gesture, talking", "stretching or shifting weight"];
     const motions = ["subtle movement", "completely still", "mid-step motion", "hair caught in motion", "frozen pose", "slight sway", "no movement at all"];
+    // Lighting/quality is allowed to drift so shots don't feel identical
+    const lightings = ["hard direct flash", "slightly overexposed flash", "soft bounced flash", "flash with deep falloff shadows", "flash mixed with ambient light", "cooler flash, slight color shift", "warmer flash, gentle glow", "flash with a touch of motion blur"];
+    const qualities = ["crisp and clean", "subtle film grain", "slightly soft focus", "a little high-contrast and punchy", "faintly washed out", "rich and saturated", "raw point-and-shoot feel"];
     const temps = ["warm tones", "cool tones", "neutral tones", "high contrast", "soft warm haze", "crisp cold air"];
     const times = ["golden hour", "midday", "blue hour", "late night", "early morning", "overcast afternoon", "dusk"];
-    const locations = ["empty hallway", "concrete stairwell", "white studio", "tiled bathroom", "parking garage", "rooftop", "kitchen corner", "hotel lobby", "back alley", "bedroom with sheer curtains", "elevator", "diner booth"];
+    // Creative but still minimal settings — avoid bare backrooms-style empty boxes
+    const locations = ["sunlit room with one large plant", "minimal cafe by a tall window", "rooftop at dusk with city haze", "quiet bookshop aisle", "empty theatre with a single spotlight", "greenhouse full of soft light", "vintage record store corner", "subway platform with passing light", "beach at golden hour, near-empty", "old stone courtyard with ivy", "neon-lit street corner at night", "warm wood-panelled bar, soft glow", "art gallery with one bold painting", "balcony with sheer curtains and city beyond", "laundromat glow at night", "minimal kitchen with morning light"];
     const pick = <T,>(arr: T[], i: number) => arr[(i + Math.floor(Math.random() * arr.length)) % arr.length];
 
     // Randomly sample 0–N keywords for a given prompt. Distribution leans heavier now:
