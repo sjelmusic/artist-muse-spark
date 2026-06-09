@@ -114,10 +114,61 @@ export function RapidReview({ open, onClose }: Props) {
   const next1 = queue[idx + 1];
   const next2 = queue[idx + 2];
 
+  // Skip past any reference headshots whose artist already had a reference
+  // chosen earlier in this session.
+  const findNext = (from: number) => {
+    let j = from;
+    while (j < queue.length) {
+      const r = queue[j];
+      if (r.phase === "reference" && skipRef.current.has(r.artist_id)) {
+        j++;
+        continue;
+      }
+      break;
+    }
+    return j;
+  };
+
   const advance = (status: "approved" | "disapproved" | "used" | null, dir: "left" | "right" | "up" | "down") => {
     if (!current) return;
     animRef.current = dir;
     setAnim(dir);
+    if (current.phase === "reference") {
+      // Reference phase: right swipe (approve) chooses this headshot as the
+      // artist's reference and kicks off variant generation. Up (used) is a skip.
+      if (status === "approved") {
+        const id = current.id;
+        const artistId = current.artist_id;
+        const name = current.artist_name;
+        skipRef.current.add(artistId);
+        void supabase.functions
+          .invoke("generate-images", {
+            body: { mode: "variants", artistId, referenceImageId: id },
+          })
+          .then(({ error }) => {
+            if (error) toast.error(`couldn't set reference for ${name}`);
+            else toast.success(`reference set — generating variants for ${name}`);
+          });
+        setCounts((c) => ({ ...c, approved: c.approved + 1 }));
+      } else if (status === "disapproved") {
+        const id = current.id;
+        void supabase
+          .from("generated_images")
+          .update({ status: "disapproved", liked: false })
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) toast.error("save failed — refresh & retry");
+          });
+        setCounts((c) => ({ ...c, disapproved: c.disapproved + 1 }));
+      } else {
+        setCounts((c) => ({ ...c, skipped: c.skipped + 1 }));
+      }
+      window.setTimeout(() => {
+        setAnim(null);
+        setIdx((i) => findNext(i + 1));
+      }, 140);
+      return;
+    }
     if (status) {
       // optimistic
       const id = current.id;
@@ -138,7 +189,7 @@ export function RapidReview({ open, onClose }: Props) {
     }
     window.setTimeout(() => {
       setAnim(null);
-      setIdx((i) => i + 1);
+      setIdx((i) => findNext(i + 1));
     }, 140);
   };
 
