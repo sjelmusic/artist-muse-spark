@@ -173,15 +173,16 @@ Deno.serve(async (req) => {
     if (mode === "headshots") {
       const keywords: string[] = artist.songs || [];
       const basePrompt = (i: number) => {
-        // Headshots lean heavy on keywords too — they should drive who this person IS.
-        let sampled = sampleKeywords(keywords);
-        if (keywords.length && !sampled) {
+        // Headshots are keyword-driven: ALWAYS include keywords (when present) and
+        // give them maximum weight — they were having too little impact before.
+        let sampled = "";
+        if (keywords.length) {
           const shuffled = [...keywords].sort(() => Math.random() - 0.5);
-          const count = Math.min(keywords.length, 1 + Math.floor(Math.random() * 3)); // 1–3
+          const count = Math.min(keywords.length, 2 + Math.floor(Math.random() * 3)); // 2–4
           sampled = shuffled.slice(0, count).map((k) => `"${k}"`).join(", ");
         }
         const songLine = sampled
-          ? ` CRITICAL CREATIVE DIRECTION — these keywords define WHO this person is and must drive their look: ${sampled}. Let them shape ethnicity, age, styling, wardrobe, hair, energy, vibe and the world around them. Bring real human diversity — do not default to one type of person.`
+          ? ` ‼️ MOST IMPORTANT — these keywords are the single biggest driver of this image and MUST dominate every choice: ${sampled}. They decide the person's ethnicity, age, styling, wardrobe, hair, makeup, props, energy, mood AND the setting and color palette. Lean into them hard and literally — if a keyword conflicts with the default setting or subject below, the keyword ALWAYS wins. Make it obvious at a glance which keywords inspired this shot.`
           : "";
         // Diversity pool — explicitly weighted to bring in MORE white people and a
         // wider age range, since the model has been defaulting to young black
