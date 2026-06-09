@@ -27,10 +27,35 @@ export function RapidReview({ open, onClose }: Props) {
   const [counts, setCounts] = useState({ approved: 0, disapproved: 0, used: 0, skipped: 0 });
   const animRef = useRef<"left" | "right" | "up" | "down" | null>(null);
   const [anim, setAnim] = useState<"left" | "right" | "up" | "down" | null>(null);
+  // artists whose reference has just been chosen in this session — their
+  // remaining headshots are skipped in the queue.
+  const skipRef = useRef<Set<string>>(new Set());
 
   const load = async () => {
     setLoading(true);
     try {
+      skipRef.current = new Set();
+      // Pull every artist so we know who is still in the choose-reference phase.
+      const { data: artists } = await supabase
+        .from("artists")
+        .select("id, name, songs, reference_image_id");
+      const aMap = new Map((artists ?? []).map((a: any) => [a.id, a]));
+      const refArtistIds = (artists ?? [])
+        .filter((a: any) => !a.reference_image_id)
+        .map((a: any) => a.id);
+
+      // Reference-phase headshots (artists who still need a reference picked).
+      const { data: headshots } = await supabase
+        .from("generated_images")
+        .select("id, artist_id, storage_path, kind, song")
+        .in("artist_id", refArtistIds.length ? refArtistIds : ["00000000-0000-0000-0000-000000000000"])
+        .eq("status", "new")
+        .eq("is_reference", false)
+        .eq("kind", "headshot")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+
+      // Variant-phase images (artists who already have a chosen reference).
       const { data: imgs } = await supabase
         .from("generated_images")
         .select("id, artist_id, storage_path, kind, song")
@@ -39,32 +64,41 @@ export function RapidReview({ open, onClose }: Props) {
         .eq("kind", "variant")
         .order("created_at", { ascending: false })
         .limit(500);
-      const artistIds = Array.from(new Set((imgs ?? []).map((i: any) => i.artist_id)));
-      const { data: artists } = await supabase
-        .from("artists")
-        .select("id, name, songs, reference_image_id")
-        .in("id", artistIds.length ? artistIds : ["00000000-0000-0000-0000-000000000000"]);
-      const aMap = new Map((artists ?? []).map((a: any) => [a.id, a]));
-      const rows: Row[] = (imgs ?? [])
+
+      const toRow = (i: any, phase: "reference" | "variant"): Row => {
+        const a = aMap.get(i.artist_id) as any;
+        return {
+          id: i.id,
+          artist_id: i.artist_id,
+          storage_path: i.storage_path,
+          kind: i.kind,
+          song: i.song,
+          artist_name: a?.name ?? "—",
+          songs: a?.songs ?? [],
+          phase,
+        };
+      };
+
+      // Group reference headshots by artist so each artist's options appear together.
+      const refRows: Row[] = [];
+      const seen = new Set<string>();
+      for (const h of headshots ?? []) {
+        if (seen.has(h.artist_id)) continue;
+        seen.add(h.artist_id);
+        for (const g of (headshots ?? []).filter((x: any) => x.artist_id === h.artist_id)) {
+          refRows.push(toRow(g, "reference"));
+        }
+      }
+
+      const variantRows: Row[] = (imgs ?? [])
         .filter((i: any) => {
           const a = aMap.get(i.artist_id) as any;
-          // only artists that already have a chosen reference,
-          // and skip the reference headshot itself
           return a && a.reference_image_id && a.reference_image_id !== i.id;
         })
-        .map((i: any) => {
-          const a = aMap.get(i.artist_id) as any;
-          return {
-            id: i.id,
-            artist_id: i.artist_id,
-            storage_path: i.storage_path,
-            kind: i.kind,
-            song: i.song,
-            artist_name: a?.name ?? "—",
-            songs: a?.songs ?? [],
-          };
-        });
-      setQueue(rows);
+        .map((i: any) => toRow(i, "variant"));
+
+      // Choose-reference artists always come first.
+      setQueue([...refRows, ...variantRows]);
       setIdx(0);
       setCounts({ approved: 0, disapproved: 0, used: 0, skipped: 0 });
     } finally {
