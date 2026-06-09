@@ -12,6 +12,7 @@ type Row = {
   song: string | null;
   artist_name: string;
   songs: string[];
+  phase: "reference" | "variant";
 };
 
 interface Props {
