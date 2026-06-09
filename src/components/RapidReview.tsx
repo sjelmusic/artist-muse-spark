@@ -315,6 +315,11 @@ export function RapidReview({ open, onClose }: Props) {
                 <div className="absolute top-3 left-3 bg-background border-2 border-foreground px-2 py-1 text-[10px] uppercase tracking-widest font-bold">
                   {current.artist_name}
                 </div>
+                {current.phase === "reference" && (
+                  <div className="absolute top-12 left-3 bg-accent text-accent-foreground border-2 border-foreground px-2 py-1 text-[10px] uppercase tracking-widest font-bold">
+                    pick reference → approve sets it
+                  </div>
+                )}
                 {current.songs.length > 0 && (
                   <div className="absolute top-3 right-3 bg-background border-2 border-foreground px-2 py-1 text-[10px] uppercase tracking-widest text-muted-foreground max-w-[60%] truncate">
                     {current.songs.slice(0, 3).join(" · ")}
