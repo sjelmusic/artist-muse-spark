@@ -139,12 +139,18 @@ Deno.serve(async (req) => {
       .single();
     if (aErr || !artist) throw new Error("Artist not found");
 
-    // Variation pools — flash lighting always stays
+    // Variation pools — flash lighting is the through-line but allowed to vary a bit
     const colors = ["warm red", "icy blue", "acid green", "buttery yellow", "dusty pink", "deep violet", "burnt orange", "cool grey", "cream", "electric teal"];
+    // Natural, candid, asymmetrical poses — never composed or symmetrical
+    const poses = ["caught mid-laugh, head tilted", "glancing back over one shoulder", "slouched and off-balance", "mid-step, weight on one leg", "looking away from camera, distracted", "leaning casually on something", "arms crossed loosely, relaxed", "turning as if just noticed the camera", "crouched low, candid", "hand running through hair", "half-turned, asymmetrical stance", "sitting sideways, unposed", "mid-gesture, talking", "stretching or shifting weight"];
     const motions = ["subtle movement", "completely still", "mid-step motion", "hair caught in motion", "frozen pose", "slight sway", "no movement at all"];
+    // Lighting/quality is allowed to drift so shots don't feel identical
+    const lightings = ["hard direct flash", "slightly overexposed flash", "soft bounced flash", "flash with deep falloff shadows", "flash mixed with ambient light", "cooler flash, slight color shift", "warmer flash, gentle glow", "flash with a touch of motion blur"];
+    const qualities = ["crisp and clean", "subtle film grain", "slightly soft focus", "a little high-contrast and punchy", "faintly washed out", "rich and saturated", "raw point-and-shoot feel"];
     const temps = ["warm tones", "cool tones", "neutral tones", "high contrast", "soft warm haze", "crisp cold air"];
     const times = ["golden hour", "midday", "blue hour", "late night", "early morning", "overcast afternoon", "dusk"];
-    const locations = ["empty hallway", "concrete stairwell", "white studio", "tiled bathroom", "parking garage", "rooftop", "kitchen corner", "hotel lobby", "back alley", "bedroom with sheer curtains", "elevator", "diner booth"];
+    // Creative but still minimal settings — avoid bare backrooms-style empty boxes
+    const locations = ["sunlit room with one large plant", "minimal cafe by a tall window", "rooftop at dusk with city haze", "quiet bookshop aisle", "empty theatre with a single spotlight", "greenhouse full of soft light", "vintage record store corner", "subway platform with passing light", "beach at golden hour, near-empty", "old stone courtyard with ivy", "neon-lit street corner at night", "warm wood-panelled bar, soft glow", "art gallery with one bold painting", "balcony with sheer curtains and city beyond", "laundromat glow at night", "minimal kitchen with morning light"];
     const pick = <T,>(arr: T[], i: number) => arr[(i + Math.floor(Math.random() * arr.length)) % arr.length];
 
     // Randomly sample 0–N keywords for a given prompt. Distribution leans heavier now:
@@ -167,15 +173,16 @@ Deno.serve(async (req) => {
     if (mode === "headshots") {
       const keywords: string[] = artist.songs || [];
       const basePrompt = (i: number) => {
-        // Headshots lean heavy on keywords too — they should drive who this person IS.
-        let sampled = sampleKeywords(keywords);
-        if (keywords.length && !sampled) {
+        // Headshots are keyword-driven: ALWAYS include keywords (when present) and
+        // give them maximum weight — they were having too little impact before.
+        let sampled = "";
+        if (keywords.length) {
           const shuffled = [...keywords].sort(() => Math.random() - 0.5);
-          const count = Math.min(keywords.length, 1 + Math.floor(Math.random() * 3)); // 1–3
+          const count = Math.min(keywords.length, 2 + Math.floor(Math.random() * 3)); // 2–4
           sampled = shuffled.slice(0, count).map((k) => `"${k}"`).join(", ");
         }
         const songLine = sampled
-          ? ` CRITICAL CREATIVE DIRECTION — these keywords define WHO this person is and must drive their look: ${sampled}. Let them shape ethnicity, age, styling, wardrobe, hair, energy, vibe and the world around them. Bring real human diversity — do not default to one type of person.`
+          ? ` ‼️ MOST IMPORTANT — these keywords are the single biggest driver of this image and MUST dominate every choice: ${sampled}. They decide the person's ethnicity, age, styling, wardrobe, hair, makeup, props, energy, mood AND the setting and color palette. Lean into them hard and literally — if a keyword conflicts with the default setting or subject below, the keyword ALWAYS wins. Make it obvious at a glance which keywords inspired this shot.`
           : "";
         // Diversity pool — explicitly weighted to bring in MORE white people and a
         // wider age range, since the model has been defaulting to young black
@@ -193,7 +200,7 @@ Deno.serve(async (req) => {
           "a teenager around 18", "a person in their late 40s with weathered character",
         ];
         const subject = diversityPool[Math.floor(Math.random() * diversityPool.length)];
-        return `you are creating a real flash image for a cool person called ${artist.name}. SUBJECT: ${subject} — actually depict them this way unless the keywords below clearly demand otherwise. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} IMPORTANT: bring real human diversity across age, ethnicity and body type — do NOT default to young black subjects. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+        return `you are creating a real flash image for a cool person called ${artist.name}. SUBJECT: ${subject} — actually depict them this way unless the keywords below clearly demand otherwise. lighting: ${pick(lightings, i)} (keep that snapshot flash feel, but let it vary). photo quality: ${pick(qualities, i)}. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. POSE: ${pick(poses, i)} — keep it natural, candid and asymmetrical, NOT stiff, posed or symmetrical. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} IMPORTANT: bring real human diversity across age, ethnicity and body type — do NOT default to young black subjects. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
       };
       const job = (async () => {
         const tasks = Array.from({ length: 4 }, (_, i) =>
@@ -252,7 +259,7 @@ Deno.serve(async (req) => {
             const songLine = sampled
               ? ` IMPORTANT — strongly anchor the mood, setting, styling and color palette around these aesthetic keywords: ${sampled}. Let them clearly drive the vibe.`
               : "";
-            const prompt = `you are creating a real flash image for this person in reference pic. always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+            const prompt = `you are creating a real flash image for this person in reference pic. lighting: ${pick(lightings, i)} (snapshot flash feel, but let it vary shot to shot). photo quality: ${pick(qualities, i)}. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. POSE: ${pick(poses, i)} — natural, candid and asymmetrical, NOT stiff, posed or symmetrical. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: pickRef() } },
