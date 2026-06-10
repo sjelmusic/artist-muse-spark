@@ -229,7 +229,7 @@ const Index = () => {
                 <ol className="space-y-1.5 text-muted-foreground leading-relaxed list-decimal list-inside">
                   <li>paste a lineup (or upload your own face) → 4 headshots get generated.</li>
                   <li>pick one as your reference → 6 styled variants are auto-generated.</li>
-                  <li>add 10 more in any flavor: <b>wild</b>, <b>cinematic</b>, <b>aesthetic</b>, or <b>plain</b> (no person, just vibe).</li>
+                  <li>add 10 more in any flavor: <b>wild</b>, <b>cinematic</b>, <b>aesthetic</b>, <b>plain</b> (no person, just vibe), or <b>snapshot</b> (blurry, raw, unpolished).</li>
                   <li>approve your favorites → they join the reference pool for future generations.</li>
                   <li>zip the lot at 3000×3000 when you're happy.</li>
                 </ol>
