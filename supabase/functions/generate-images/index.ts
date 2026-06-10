@@ -463,12 +463,39 @@ Deno.serve(async (req) => {
               flavor === "plain"
                 ? `you are creating a real flash image that captures the VIBE and PERSONALITY of the artist ${artist.name}. NO PERSON IN THE FRAME. use the reference image only to read their aesthetic world.`
                 : `you are creating a real flash image inspired by this person in reference pic. when the person is visible, keep the face identical to the reference.`;
+            // AESTHETIC flavor cycles three editorial treatments the user loves:
+            // far-away artist shots, layered photo-in-photo compositions, and bold
+            // stencil-name covers. allowName lets the artist name appear as text.
+            let directive = cfg.directive;
+            let allowName = false;
+            if (flavor === "aesthetic") {
+              const treatments = [
+                {
+                  d: `FAR-AWAY treatment: the artist is a TINY figure in the frame with lots of negative space — beautiful, minimal, fine-art editorial. keep it clearly the same person from the reference, just small and distant.`,
+                  name: false,
+                },
+                {
+                  d: `LAYERED treatment: a striking photo-in-photo / double-exposure / collage composition where MULTIPLE images of the same person are layered inside each other — overlapping frames, a smaller photo within the bigger photo, or a translucent double exposure. artful and intentional, same person throughout.`,
+                  name: false,
+                },
+                {
+                  d: `STENCIL-NAME treatment: an aesthetic shot of the artist (far away or medium distance) with their name rendered LARGE and BOLD across the top like a spray-paint stencil / punk poster typography.`,
+                  name: true,
+                },
+              ];
+              const t = treatments[Math.floor(Math.random() * treatments.length)];
+              directive = t.d;
+              allowName = t.name;
+            }
+            const noText = allowName
+              ? `The ONLY text allowed is the artist's name "${artist.name}" rendered as a bold stencil — it must be spelled EXACTLY "${artist.name}" and nothing else. NO other text, numbers, watermarks, logos, captions or signage anywhere.`
+              : `ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
             // keyword-fit setting: when keywords drive the shot, the location must match
             // them; otherwise use the flavor's curated location pool.
             const extraSetting = sampled
               ? `setting: choose a real place that genuinely FITS the keywords above and must NEVER contradict them (e.g. a punk/metal keyword should never be in a library or pristine cafe); otherwise lean toward: ${pick(cfg.locations, i)}.`
               : `setting: ${pick(cfg.locations, i)}.`;
-            const prompt = `${intro} ${REALISM} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} ${extraSetting} dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+            const prompt = `${intro} ${REALISM} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${directive} ${extraSetting} dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ${noText}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: pickRef() } },
