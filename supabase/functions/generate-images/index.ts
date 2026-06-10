@@ -479,7 +479,7 @@ Deno.serve(async (req) => {
                   name: false,
                 },
                 {
-                  d: `STENCIL-NAME treatment: an aesthetic shot of the artist (far away or medium distance) with their name rendered LARGE and BOLD across the top like a spray-paint stencil / punk poster typography.`,
+                  d: `NAME-OVERLAY treatment: an aesthetic shot of the artist (far away or medium distance) with their name set across the top as a tasteful overlay. the typography should match the overall vibe of the photo — clean, understated and editorial, NOT a spray-paint stencil or punk poster. let it feel like a refined magazine cover / album-art title that complements the image rather than shouting over it.`,
                   name: true,
                 },
               ];
@@ -488,7 +488,7 @@ Deno.serve(async (req) => {
               allowName = t.name;
             }
             const noText = allowName
-              ? `The ONLY text allowed is the artist's name "${artist.name}" rendered as a bold stencil — it must be spelled EXACTLY "${artist.name}" and nothing else. NO other text, numbers, watermarks, logos, captions or signage anywhere.`
+              ? `The ONLY text allowed is the artist's name "${artist.name}" set as a tasteful, understated overlay that fits the overall vibe of the photo (clean editorial / album-art typography, NOT a stencil) — it must be spelled EXACTLY "${artist.name}" and nothing else. NO other text, numbers, watermarks, logos, captions or signage anywhere.`
               : `ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
             // keyword-fit setting: when keywords drive the shot, the location must match
             // them; otherwise use the flavor's curated location pool.
