@@ -379,6 +379,15 @@ Deno.serve(async (req) => {
       ];
       const plainIntensities = ["editorial still life", "moody and personal", "diaristic and intimate", "gallery quiet", "vibe-piece, no subject", "atmospheric vignette"];
 
+      // ---- SNAPSHOT ---- (raw, blurry, unpolished, real candid phone photos)
+      const snapshotLocations = [
+        "messy bedroom with clothes on the floor", "kitchen at night, fridge light", "back seat of a moving car", "house party in a dim living room", "convenience store under harsh lights", "bus stop at night", "walking down a sidewalk, mid-stride", "bathroom mirror selfie energy (but not a selfie)", "stairwell of an apartment block", "smoking area outside a venue", "cramped diner booth", "elevator with mirrored walls", "corner of a crowded bar", "parking garage at night", "kitchen counter with takeout containers", "couch with the TV glow",
+      ];
+      const snapshotMoods = [
+        "noticeable motion blur", "slightly out of focus", "caught mid-movement, imperfect", "off-center crop, accidental framing", "harsh on-camera flash washing out skin", "low light grain and noise", "blurry hand or limb in motion", "candid, unaware of the camera", "slightly tilted horizon", "red-eye flash energy",
+      ];
+      const snapshotIntensities = ["raw and unpolished", "throwaway candid snap", "real disposable-camera feel", "grainy phone photo", "imperfect and authentic", "blurry in-the-moment", "amateur point-and-shoot"];
+
       const flavorConfig = {
         wild: {
           locations: wildLocations,
@@ -407,6 +416,13 @@ Deno.serve(async (req) => {
           intensities: plainIntensities,
           directive:
             "make it PLAIN: NO PERSON IN THE FRAME AT ALL. This is a pure vibe / still-life / environment shot that represents the artist's personality and the mood of their music. Objects, rooms, scenes, atmospheres only. Use the reference image only to understand their aesthetic world (color palette, taste, energy) — do NOT depict the person. Real, flash-lit, editorial.",
+        },
+        snapshot: {
+          locations: snapshotLocations,
+          moods: snapshotMoods,
+          intensities: snapshotIntensities,
+          directive:
+            "make it a raw SNAPSHOT: looks like a candid photo taken quickly on a phone or a cheap disposable/point-and-shoot camera. embrace MOTION BLUR, slight out-of-focus, grain, noise and imperfect accidental framing. unpolished, low-effort, REAL — like a throwaway photo grabbed in passing, NOT staged, NOT clean, NOT pretty. different outfit, different pose.",
         },
       } as const;
       const cfg = flavorConfig[flavor];
