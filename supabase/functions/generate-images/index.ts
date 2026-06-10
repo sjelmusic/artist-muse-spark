@@ -450,7 +450,12 @@ Deno.serve(async (req) => {
               flavor === "plain"
                 ? `you are creating a real flash image that captures the VIBE and PERSONALITY of the artist ${artist.name}. NO PERSON IN THE FRAME. use the reference image only to read their aesthetic world.`
                 : `you are creating a real flash image inspired by this person in reference pic. when the person is visible, keep the face identical to the reference.`;
-            const prompt = `${intro} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} setting: ${pick(cfg.locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+            // keyword-fit setting: when keywords drive the shot, the location must match
+            // them; otherwise use the flavor's curated location pool.
+            const extraSetting = sampled
+              ? `setting: choose a real place that genuinely FITS the keywords above and must NEVER contradict them (e.g. a punk/metal keyword should never be in a library or pristine cafe); otherwise lean toward: ${pick(cfg.locations, i)}.`
+              : `setting: ${pick(cfg.locations, i)}.`;
+            const prompt = `${intro} ${REALISM} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} ${extraSetting} dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: pickRef() } },
