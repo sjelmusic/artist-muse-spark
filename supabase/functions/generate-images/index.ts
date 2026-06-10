@@ -338,12 +338,25 @@ Deno.serve(async (req) => {
       ];
       const cinematicIntensities = ["moody and intimate", "romantic melancholy", "quiet confidence", "noir-tinted", "cinematic stillness", "warm nostalgic", "slow-burn drama"];
 
-      // ---- AESTHETIC ---- (person very far, very close, or even absent)
+      // ---- AESTHETIC ---- (the ARTIST stays in the shot: far-away figures, layered
+      // photo-in-photo compositions, or bold stencil-name editorial covers — NO random
+      // still-life objects, which felt posed/AI and ignored the keywords)
       const aestheticLocations = [
-        "tiny silhouette at end of long empty hallway", "lone figure walking across vast empty parking lot", "small figure in middle of huge empty field", "person dwarfed by a giant concrete wall", "extreme close-up of just the eye", "extreme close-up of hands holding a flower", "macro of skin texture and a single earring", "back of the head only, hair detail", "just shoes on a tiled floor", "STILL LIFE: an empty chair, a coat draped over it (no person)", "STILL LIFE: a half-drunk glass of wine on a windowsill (no person)", "STILL LIFE: rumpled bed with morning light, no person", "STILL LIFE: open window with curtain blowing, no person", "wide aerial-feel shot, person tiny in the corner", "person reflected small in a huge mirror across the room", "shot through a doorway, person far away in the next room",
+        "tiny lone figure on a vast empty beach at golden hour",
+        "small silhouette walking through tall misty grass",
+        "lone figure dwarfed by a huge brutalist concrete wall",
+        "tiny figure at the end of a long sunlit corridor",
+        "small figure alone on an empty rooftop against a big sky",
+        "lone figure crossing a wide empty plaza in soft light",
+        "distant figure standing in a foggy field at dawn",
+        "small figure against a massive bold painted wall",
+        "lone figure on an empty road stretching to the horizon",
+        "tiny figure framed in a huge industrial doorway",
+        "small figure on endless concrete stairs, lots of negative space",
+        "lone figure under a vast overpass, dwarfed by scale",
       ];
       const aestheticMoods = [
-        "extreme wide shot, brutal negative space", "extreme macro close-up", "object-focused still life, no figure", "minimal composition, rule of thirds", "architectural symmetry, person as accent", "tight crop on a single detail", "shot from very far away with a long lens feel",
+        "extreme wide shot, brutal negative space", "subject small in frame, rule of thirds", "long-lens compression, far away", "architectural scale, person as a tiny accent", "high vantage looking down, figure tiny", "minimal horizon, lots of empty sky",
       ];
       const aestheticIntensities = ["minimalist and refined", "lonely and beautiful", "editorial fine-art", "gallery-worthy quiet", "fashion campaign minimalism", "negative-space heavy"];
 
