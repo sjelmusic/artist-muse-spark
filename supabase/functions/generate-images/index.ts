@@ -338,12 +338,25 @@ Deno.serve(async (req) => {
       ];
       const cinematicIntensities = ["moody and intimate", "romantic melancholy", "quiet confidence", "noir-tinted", "cinematic stillness", "warm nostalgic", "slow-burn drama"];
 
-      // ---- AESTHETIC ---- (person very far, very close, or even absent)
+      // ---- AESTHETIC ---- (the ARTIST stays in the shot: far-away figures, layered
+      // photo-in-photo compositions, or bold stencil-name editorial covers — NO random
+      // still-life objects, which felt posed/AI and ignored the keywords)
       const aestheticLocations = [
-        "tiny silhouette at end of long empty hallway", "lone figure walking across vast empty parking lot", "small figure in middle of huge empty field", "person dwarfed by a giant concrete wall", "extreme close-up of just the eye", "extreme close-up of hands holding a flower", "macro of skin texture and a single earring", "back of the head only, hair detail", "just shoes on a tiled floor", "STILL LIFE: an empty chair, a coat draped over it (no person)", "STILL LIFE: a half-drunk glass of wine on a windowsill (no person)", "STILL LIFE: rumpled bed with morning light, no person", "STILL LIFE: open window with curtain blowing, no person", "wide aerial-feel shot, person tiny in the corner", "person reflected small in a huge mirror across the room", "shot through a doorway, person far away in the next room",
+        "tiny lone figure on a vast empty beach at golden hour",
+        "small silhouette walking through tall misty grass",
+        "lone figure dwarfed by a huge brutalist concrete wall",
+        "tiny figure at the end of a long sunlit corridor",
+        "small figure alone on an empty rooftop against a big sky",
+        "lone figure crossing a wide empty plaza in soft light",
+        "distant figure standing in a foggy field at dawn",
+        "small figure against a massive bold painted wall",
+        "lone figure on an empty road stretching to the horizon",
+        "tiny figure framed in a huge industrial doorway",
+        "small figure on endless concrete stairs, lots of negative space",
+        "lone figure under a vast overpass, dwarfed by scale",
       ];
       const aestheticMoods = [
-        "extreme wide shot, brutal negative space", "extreme macro close-up", "object-focused still life, no figure", "minimal composition, rule of thirds", "architectural symmetry, person as accent", "tight crop on a single detail", "shot from very far away with a long lens feel",
+        "extreme wide shot, brutal negative space", "subject small in frame, rule of thirds", "long-lens compression, far away", "architectural scale, person as a tiny accent", "high vantage looking down, figure tiny", "minimal horizon, lots of empty sky",
       ];
       const aestheticIntensities = ["minimalist and refined", "lonely and beautiful", "editorial fine-art", "gallery-worthy quiet", "fashion campaign minimalism", "negative-space heavy"];
 
@@ -408,7 +421,7 @@ Deno.serve(async (req) => {
           moods: aestheticMoods,
           intensities: aestheticIntensities,
           directive:
-            "make it AESTHETIC and minimal: the person is either VERY FAR away (tiny in the frame, lots of negative space), or in EXTREME CLOSE-UP (a hand, an eye, a detail), or NOT VISIBLE AT ALL (a still-life of an object/scene that represents them). gallery-worthy, fine-art editorial.",
+            "make it AESTHETIC and minimal: the ARTIST stays in the shot. gallery-worthy, fine-art editorial. NO random still-life object photos.",
         },
         plain: {
           locations: plainLocations,
@@ -450,12 +463,39 @@ Deno.serve(async (req) => {
               flavor === "plain"
                 ? `you are creating a real flash image that captures the VIBE and PERSONALITY of the artist ${artist.name}. NO PERSON IN THE FRAME. use the reference image only to read their aesthetic world.`
                 : `you are creating a real flash image inspired by this person in reference pic. when the person is visible, keep the face identical to the reference.`;
+            // AESTHETIC flavor cycles three editorial treatments the user loves:
+            // far-away artist shots, layered photo-in-photo compositions, and bold
+            // stencil-name covers. allowName lets the artist name appear as text.
+            let directive = cfg.directive;
+            let allowName = false;
+            if (flavor === "aesthetic") {
+              const treatments = [
+                {
+                  d: `FAR-AWAY treatment: the artist is a TINY figure in the frame with lots of negative space — beautiful, minimal, fine-art editorial. keep it clearly the same person from the reference, just small and distant.`,
+                  name: false,
+                },
+                {
+                  d: `LAYERED treatment: a striking photo-in-photo / double-exposure / collage composition where MULTIPLE images of the same person are layered inside each other — overlapping frames, a smaller photo within the bigger photo, or a translucent double exposure. artful and intentional, same person throughout.`,
+                  name: false,
+                },
+                {
+                  d: `STENCIL-NAME treatment: an aesthetic shot of the artist (far away or medium distance) with their name rendered LARGE and BOLD across the top like a spray-paint stencil / punk poster typography.`,
+                  name: true,
+                },
+              ];
+              const t = treatments[Math.floor(Math.random() * treatments.length)];
+              directive = t.d;
+              allowName = t.name;
+            }
+            const noText = allowName
+              ? `The ONLY text allowed is the artist's name "${artist.name}" rendered as a bold stencil — it must be spelled EXACTLY "${artist.name}" and nothing else. NO other text, numbers, watermarks, logos, captions or signage anywhere.`
+              : `ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
             // keyword-fit setting: when keywords drive the shot, the location must match
             // them; otherwise use the flavor's curated location pool.
             const extraSetting = sampled
               ? `setting: choose a real place that genuinely FITS the keywords above and must NEVER contradict them (e.g. a punk/metal keyword should never be in a library or pristine cafe); otherwise lean toward: ${pick(cfg.locations, i)}.`
               : `setting: ${pick(cfg.locations, i)}.`;
-            const prompt = `${intro} ${REALISM} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} ${extraSetting} dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+            const prompt = `${intro} ${REALISM} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${directive} ${extraSetting} dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ${noText}`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: pickRef() } },
