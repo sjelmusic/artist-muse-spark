@@ -153,6 +153,19 @@ Deno.serve(async (req) => {
     const locations = ["sunlit room with one large plant", "minimal cafe by a tall window", "rooftop at dusk with city haze", "quiet bookshop aisle", "empty theatre with a single spotlight", "greenhouse full of soft light", "vintage record store corner", "subway platform with passing light", "beach at golden hour, near-empty", "old stone courtyard with ivy", "neon-lit street corner at night", "warm wood-panelled bar, soft glow", "art gallery with one bold painting", "balcony with sheer curtains and city beyond", "laundromat glow at night", "minimal kitchen with morning light"];
     const pick = <T,>(arr: T[], i: number) => arr[(i + Math.floor(Math.random() * arr.length)) % arr.length];
 
+    // Strong, shared realism instruction — every prompt should feel like a real, candid,
+    // unpolished snapshot, NOT a glossy AI-perfect render.
+    const REALISM =
+      "Make it look like a REAL photograph — candid, natural and unpolished, like a genuine moment grabbed on a phone or point-and-shoot, NOT a studio shoot. Real human skin with pores and texture (no plastic AI-perfect skin), believable imperfect framing, true-to-life proportions. Avoid over-stylized, over-smoothed, glossy or obviously AI-generated looks.";
+
+    // Keyword-aware setting line. When keywords exist, the setting MUST be derived from
+    // them and must never contradict them (e.g. a "metal punk" keyword should never land
+    // the subject in a library or pristine cafe). Falls back to the curated pool otherwise.
+    const settingLine = (i: number, hasKeywords: boolean) =>
+      hasKeywords
+        ? `setting: choose a real, believable place that genuinely FITS the keywords above and the person's world — the location MUST match their vibe and must NEVER contradict the keywords (e.g. a punk/metal keyword should never be in a library, bookshop or pristine cafe; a soft/dreamy keyword should not be in a gritty garage). keep it minimal and uncluttered.`
+        : `setting: ${pick(locations, i)}.`;
+
     // Randomly sample 0–N keywords for a given prompt. Distribution leans heavier now:
     // ~10% none, ~35% one, ~35% two, ~20% three. Returns a phrase fragment or "".
     const sampleKeywords = (pool: string[]): string => {
