@@ -678,6 +678,15 @@ export function ArtistCard({ artist, onChange }: Props) {
                 >
                   <Plus className="w-3 h-3 mr-1" /> 10 plain
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => generateExtra("snapshot")}
+                  className="border-2 border-foreground hover:bg-accent hover:text-accent-foreground h-7 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> 10 snapshot
+                </Button>
               </div>
             </div>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
