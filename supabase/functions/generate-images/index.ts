@@ -421,7 +421,7 @@ Deno.serve(async (req) => {
           moods: aestheticMoods,
           intensities: aestheticIntensities,
           directive:
-            "make it AESTHETIC and minimal: the person is either VERY FAR away (tiny in the frame, lots of negative space), or in EXTREME CLOSE-UP (a hand, an eye, a detail), or NOT VISIBLE AT ALL (a still-life of an object/scene that represents them). gallery-worthy, fine-art editorial.",
+            "make it AESTHETIC and minimal: the ARTIST stays in the shot. gallery-worthy, fine-art editorial. NO random still-life object photos.",
         },
         plain: {
           locations: plainLocations,
