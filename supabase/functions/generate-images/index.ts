@@ -153,6 +153,19 @@ Deno.serve(async (req) => {
     const locations = ["sunlit room with one large plant", "minimal cafe by a tall window", "rooftop at dusk with city haze", "quiet bookshop aisle", "empty theatre with a single spotlight", "greenhouse full of soft light", "vintage record store corner", "subway platform with passing light", "beach at golden hour, near-empty", "old stone courtyard with ivy", "neon-lit street corner at night", "warm wood-panelled bar, soft glow", "art gallery with one bold painting", "balcony with sheer curtains and city beyond", "laundromat glow at night", "minimal kitchen with morning light"];
     const pick = <T,>(arr: T[], i: number) => arr[(i + Math.floor(Math.random() * arr.length)) % arr.length];
 
+    // Strong, shared realism instruction — every prompt should feel like a real, candid,
+    // unpolished snapshot, NOT a glossy AI-perfect render.
+    const REALISM =
+      "Make it look like a REAL photograph — candid, natural and unpolished, like a genuine moment grabbed on a phone or point-and-shoot, NOT a studio shoot. Real human skin with pores and texture (no plastic AI-perfect skin), believable imperfect framing, true-to-life proportions. Avoid over-stylized, over-smoothed, glossy or obviously AI-generated looks.";
+
+    // Keyword-aware setting line. When keywords exist, the setting MUST be derived from
+    // them and must never contradict them (e.g. a "metal punk" keyword should never land
+    // the subject in a library or pristine cafe). Falls back to the curated pool otherwise.
+    const settingLine = (i: number, hasKeywords: boolean) =>
+      hasKeywords
+        ? `setting: choose a real, believable place that genuinely FITS the keywords above and the person's world — the location MUST match their vibe and must NEVER contradict the keywords (e.g. a punk/metal keyword should never be in a library, bookshop or pristine cafe; a soft/dreamy keyword should not be in a gritty garage). keep it minimal and uncluttered.`
+        : `setting: ${pick(locations, i)}.`;
+
     // Randomly sample 0–N keywords for a given prompt. Distribution leans heavier now:
     // ~10% none, ~35% one, ~35% two, ~20% three. Returns a phrase fragment or "".
     const sampleKeywords = (pool: string[]): string => {
@@ -200,7 +213,7 @@ Deno.serve(async (req) => {
           "a teenager around 18", "a person in their late 40s with weathered character",
         ];
         const subject = diversityPool[Math.floor(Math.random() * diversityPool.length)];
-        return `you are creating a real flash image for a cool person called ${artist.name}. SUBJECT: ${subject} — actually depict them this way unless the keywords below clearly demand otherwise. lighting: ${pick(lightings, i)} (keep that snapshot flash feel, but let it vary). photo quality: ${pick(qualities, i)}. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. POSE: ${pick(poses, i)} — keep it natural, candid and asymmetrical, NOT stiff, posed or symmetrical. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} IMPORTANT: bring real human diversity across age, ethnicity and body type — do NOT default to young black subjects. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+        return `you are creating a real flash image for a cool person called ${artist.name}. SUBJECT: ${subject} — actually depict them this way unless the keywords below clearly demand otherwise. ${REALISM} lighting: ${pick(lightings, i)} (keep that snapshot flash feel, but let it vary). photo quality: ${pick(qualities, i)}. SQUARE 1:1 aspect ratio composition. very real, very cool, minimal artsy aesthetic, not cluttered. POSE: ${pick(poses, i)} — keep it natural, candid and asymmetrical, NOT stiff, posed or symmetrical. ${settingLine(i, keywords.length > 0)} dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} IMPORTANT: bring real human diversity across age, ethnicity and body type — do NOT default to young black subjects. ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
       };
       const job = (async () => {
         const tasks = Array.from({ length: 4 }, (_, i) =>
@@ -259,7 +272,7 @@ Deno.serve(async (req) => {
             const songLine = sampled
               ? ` IMPORTANT — strongly anchor the mood, setting, styling and color palette around these aesthetic keywords: ${sampled}. Let them clearly drive the vibe.`
               : "";
-            const prompt = `you are creating a real flash image for this person in reference pic. lighting: ${pick(lightings, i)} (snapshot flash feel, but let it vary shot to shot). photo quality: ${pick(qualities, i)}. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. POSE: ${pick(poses, i)} — natural, candid and asymmetrical, NOT stiff, posed or symmetrical. setting: ${pick(locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+            const prompt = `you are creating a real flash image for this person in reference pic. ${REALISM} lighting: ${pick(lightings, i)} (snapshot flash feel, but let it vary shot to shot). photo quality: ${pick(qualities, i)}. SQUARE 1:1 aspect ratio composition. very real, very cool. exactly the same person, but different setting, different pose, different outfit. POSE: ${pick(poses, i)} — natural, candid and asymmetrical, NOT stiff, posed or symmetrical. ${settingLine(i, !!sampled)} dominant color accent: ${pick(colors, i)}. ${pick(motions, i)}. ${pick(temps, i)}. ${pick(times, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: pickRef() } },
@@ -291,11 +304,12 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "extra") {
-      const flavor: "wild" | "cinematic" | "aesthetic" | "plain" =
+      const flavor: "wild" | "cinematic" | "aesthetic" | "plain" | "snapshot" =
         body.flavor === "wild" ||
         body.flavor === "cinematic" ||
         body.flavor === "aesthetic" ||
-        body.flavor === "plain"
+        body.flavor === "plain" ||
+        body.flavor === "snapshot"
           ? body.flavor
           : "cinematic";
 
@@ -365,6 +379,15 @@ Deno.serve(async (req) => {
       ];
       const plainIntensities = ["editorial still life", "moody and personal", "diaristic and intimate", "gallery quiet", "vibe-piece, no subject", "atmospheric vignette"];
 
+      // ---- SNAPSHOT ---- (raw, blurry, unpolished, real candid phone photos)
+      const snapshotLocations = [
+        "messy bedroom with clothes on the floor", "kitchen at night, fridge light", "back seat of a moving car", "house party in a dim living room", "convenience store under harsh lights", "bus stop at night", "walking down a sidewalk, mid-stride", "bathroom mirror selfie energy (but not a selfie)", "stairwell of an apartment block", "smoking area outside a venue", "cramped diner booth", "elevator with mirrored walls", "corner of a crowded bar", "parking garage at night", "kitchen counter with takeout containers", "couch with the TV glow",
+      ];
+      const snapshotMoods = [
+        "noticeable motion blur", "slightly out of focus", "caught mid-movement, imperfect", "off-center crop, accidental framing", "harsh on-camera flash washing out skin", "low light grain and noise", "blurry hand or limb in motion", "candid, unaware of the camera", "slightly tilted horizon", "red-eye flash energy",
+      ];
+      const snapshotIntensities = ["raw and unpolished", "throwaway candid snap", "real disposable-camera feel", "grainy phone photo", "imperfect and authentic", "blurry in-the-moment", "amateur point-and-shoot"];
+
       const flavorConfig = {
         wild: {
           locations: wildLocations,
@@ -394,6 +417,13 @@ Deno.serve(async (req) => {
           directive:
             "make it PLAIN: NO PERSON IN THE FRAME AT ALL. This is a pure vibe / still-life / environment shot that represents the artist's personality and the mood of their music. Objects, rooms, scenes, atmospheres only. Use the reference image only to understand their aesthetic world (color palette, taste, energy) — do NOT depict the person. Real, flash-lit, editorial.",
         },
+        snapshot: {
+          locations: snapshotLocations,
+          moods: snapshotMoods,
+          intensities: snapshotIntensities,
+          directive:
+            "make it a raw SNAPSHOT: looks like a candid photo taken quickly on a phone or a cheap disposable/point-and-shoot camera. embrace MOTION BLUR, slight out-of-focus, grain, noise and imperfect accidental framing. unpolished, low-effort, REAL — like a throwaway photo grabbed in passing, NOT staged, NOT clean, NOT pretty. different outfit, different pose.",
+        },
       } as const;
       const cfg = flavorConfig[flavor];
 
@@ -420,7 +450,12 @@ Deno.serve(async (req) => {
               flavor === "plain"
                 ? `you are creating a real flash image that captures the VIBE and PERSONALITY of the artist ${artist.name}. NO PERSON IN THE FRAME. use the reference image only to read their aesthetic world.`
                 : `you are creating a real flash image inspired by this person in reference pic. when the person is visible, keep the face identical to the reference.`;
-            const prompt = `${intro} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} setting: ${pick(cfg.locations, i)}. dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
+            // keyword-fit setting: when keywords drive the shot, the location must match
+            // them; otherwise use the flavor's curated location pool.
+            const extraSetting = sampled
+              ? `setting: choose a real place that genuinely FITS the keywords above and must NEVER contradict them (e.g. a punk/metal keyword should never be in a library or pristine cafe); otherwise lean toward: ${pick(cfg.locations, i)}.`
+              : `setting: ${pick(cfg.locations, i)}.`;
+            const prompt = `${intro} ${REALISM} always shot with direct flash lighting. SQUARE 1:1 aspect ratio composition. ${cfg.directive} ${extraSetting} dominant color accent: ${pick(colors, i)}. ${pick(cfg.moods, i)}. ${pick(temps, i)}. ${pick(times, i)}. overall mood: ${pick(cfg.intensities, i)}.${songLine} ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WORDS, NO WATERMARKS, NO LOGOS, NO CAPTIONS, NO SIGNAGE TEXT anywhere in the image.`;
             const dataUrl = await callAI([
               { type: "text", text: prompt },
               { type: "image_url", image_url: { url: pickRef() } },
